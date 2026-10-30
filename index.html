@@ -1,0 +1,3203 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente de Estudio IA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --facil: #4ade80;
+            --medio: #fbbf24;
+            --dificil: #f87171;
+            --card: rgba(255, 255, 255, 0.08);
+            --card-alto: rgba(255, 255, 255, 0.14);
+            --borde: rgba(255, 255, 255, 0.14);
+            --texto: #f1f5f9;
+            --suave: #cbd5e1;
+            --tenue: #94a3b8;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 45%, #0f172a 100%);
+            background-attachment: fixed;
+            color: var(--texto);
+            padding-bottom: 60px;
+        }
+
+        .volver {
+            position: fixed;
+            top: 14px;
+            left: 14px;
+            z-index: 50;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--borde);
+            padding: 8px 16px;
+            color: var(--texto);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: background 0.3s ease;
+        }
+
+        .volver:hover {
+            background: rgba(0, 0, 0, 0.55);
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 20px 10px;
+        }
+
+        header h1 {
+            font-size: 2.4rem;
+            background: linear-gradient(90deg, #a78bfa, #67e8f9);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        header p {
+            color: var(--suave);
+            margin-top: 6px;
+            font-size: 0.95rem;
+        }
+
+        .cinta {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 18px auto 0;
+            max-width: 900px;
+            padding: 0 20px;
+        }
+
+        .pastilla {
+            background: var(--card);
+            border: 1px solid var(--borde);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--suave);
+        }
+
+        .pastilla b {
+            color: var(--texto);
+        }
+
+        nav.pestanas {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 24px auto 0;
+            max-width: 900px;
+            padding: 0 20px;
+        }
+
+        nav.pestanas button {
+            background: var(--card);
+            border: 1px solid var(--borde);
+            color: var(--suave);
+            padding: 11px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            transition: all 0.25s ease;
+        }
+
+        nav.pestanas button:hover {
+            background: var(--card-alto);
+            transform: translateY(-2px);
+        }
+
+        nav.pestanas button.activa {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+        }
+
+        main {
+            max-width: 1000px;
+            margin: 26px auto 0;
+            padding: 0 20px;
+        }
+
+        .vista {
+            display: none;
+            animation: aparecer 0.35s ease;
+        }
+
+        .vista.activa {
+            display: block;
+        }
+
+        @keyframes aparecer {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .panel {
+            background: var(--card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--borde);
+            border-radius: 20px;
+            padding: 26px;
+            margin-bottom: 20px;
+        }
+
+        .panel h2 {
+            font-size: 1.3rem;
+            margin-bottom: 6px;
+        }
+
+        .panel .ayuda {
+            color: var(--tenue);
+            font-size: 0.88rem;
+            margin-bottom: 18px;
+            line-height: 1.5;
+        }
+
+        .rejilla {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.82rem;
+            color: var(--suave);
+            margin: 14px 0 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input[type="text"], textarea, select {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--borde);
+            color: var(--texto);
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 0.98rem;
+            font-family: inherit;
+            transition: border-color 0.2s ease;
+        }
+
+        input[type="text"]:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #818cf8;
+        }
+
+        textarea {
+            min-height: 150px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .fila {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .fila > * {
+            flex: 1 1 180px;
+        }
+
+        .fila > .auto {
+            flex: 0 0 auto;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border: none;
+            color: white;
+            padding: 12px 22px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: transform 0.2s ease, filter 0.2s ease;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            filter: brightness(1.1);
+        }
+
+        .btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .btn.sec {
+            background: var(--card-alto);
+            border: 1px solid var(--borde);
+            color: var(--texto);
+        }
+
+        .btn.peligro {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+        }
+
+        .btn.pequeno {
+            padding: 7px 14px;
+            font-size: 0.82rem;
+            border-radius: 9px;
+        }
+
+        .niveles {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .nivel-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            background: var(--card-alto);
+            border: 1px solid var(--borde);
+            padding: 8px 15px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.88rem;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        .nivel-chip input {
+            accent-color: #6366f1;
+            cursor: pointer;
+        }
+
+        .nivel-chip.on {
+            border-color: currentColor;
+        }
+
+        .nivel-chip.on.facil { color: var(--facil); background: rgba(74, 222, 128, 0.12); }
+        .nivel-chip.on.medio { color: var(--medio); background: rgba(251, 191, 36, 0.12); }
+        .nivel-chip.on.dificil { color: var(--dificil); background: rgba(248, 113, 113, 0.12); }
+
+        .etiqueta {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .etiqueta.facil { background: rgba(74, 222, 128, 0.18); color: var(--facil); }
+        .etiqueta.medio { background: rgba(251, 191, 36, 0.18); color: var(--medio); }
+        .etiqueta.dificil { background: rgba(248, 113, 113, 0.18); color: var(--dificil); }
+        .etiqueta.tipo { background: rgba(129, 140, 248, 0.18); color: #a5b4fc; }
+
+        .tarjeta-tema {
+            background: var(--card-alto);
+            border: 1px solid var(--borde);
+            border-radius: 16px;
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tarjeta-tema h3 {
+            font-size: 1.1rem;
+        }
+
+        .tarjeta-tema .meta {
+            font-size: 0.82rem;
+            color: var(--tenue);
+            line-height: 1.6;
+        }
+
+        .barra {
+            height: 9px;
+            background: rgba(0, 0, 0, 0.35);
+            border-radius: 9px;
+            overflow: hidden;
+        }
+
+        .barra > div {
+            height: 100%;
+            border-radius: 9px;
+            transition: width 0.6s ease;
+        }
+
+        .acciones {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: auto;
+        }
+
+        .vacio {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--tenue);
+        }
+
+        .vacio .icono {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        .lista-item {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--borde);
+            border-left: 3px solid #6366f1;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .lista-item .cabeza {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        .lista-item .enunciado {
+            font-size: 1rem;
+            line-height: 1.5;
+        }
+
+        .lista-item .opciones-mini {
+            margin-top: 10px;
+            font-size: 0.86rem;
+            color: var(--suave);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .op-mini {
+            background: rgba(255, 255, 255, 0.07);
+            padding: 4px 10px;
+            border-radius: 8px;
+        }
+
+        .op-mini.bien { background: rgba(74, 222, 128, 0.2); color: var(--facil); }
+        .op-mini.mal { background: rgba(248, 113, 113, 0.2); color: var(--dificil); }
+
+        .quiz-caja {
+            background: rgba(0, 0, 0, 0.25);
+            border: 1px solid var(--borde);
+            border-radius: 20px;
+            padding: 30px;
+        }
+
+        .quiz-progreso {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--suave);
+            margin-bottom: 10px;
+        }
+
+        .quiz-pregunta {
+            font-size: 1.25rem;
+            line-height: 1.5;
+            margin: 20px 0;
+        }
+
+        .quiz-opciones {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .opcion {
+            background: var(--card-alto);
+            border: 2px solid transparent;
+            padding: 14px 18px;
+            text-align: left;
+            color: var(--texto);
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 0.98rem;
+            font-family: inherit;
+            transition: all 0.2s ease;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .opcion:hover:not(.bloqueada) {
+            background: rgba(255, 255, 255, 0.22);
+            transform: translateX(6px);
+        }
+
+        .opcion .letra {
+            font-weight: 700;
+            opacity: 0.7;
+            min-width: 20px;
+        }
+
+        .opcion.correcta {
+            background: rgba(34, 197, 94, 0.28);
+            border-color: #4ade80;
+        }
+
+        .opcion.incorrecta {
+            background: rgba(239, 68, 68, 0.26);
+            border-color: #f87171;
+        }
+
+        .opcion.bloqueada {
+            cursor: not-allowed;
+        }
+
+        .explicacion {
+            margin-top: 18px;
+            background: rgba(99, 102, 241, 0.16);
+            border-left: 3px solid #818cf8;
+            padding: 14px 16px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--suave);
+        }
+
+        .explicacion b {
+            color: var(--texto);
+        }
+
+        .puntuacion {
+            width: 170px;
+            height: 170px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 6px solid #6366f1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+        }
+
+        .puntuacion .cifra {
+            font-size: 2.8rem;
+            font-weight: 700;
+        }
+
+        .puntuacion .unidad {
+            font-size: 0.8rem;
+            color: var(--tenue);
+        }
+
+        .flash {
+            perspective: 1200px;
+            cursor: pointer;
+            height: 260px;
+            margin-bottom: 20px;
+        }
+
+        .flash .cara {
+            position: absolute;
+            inset: 0;
+            backface-visibility: hidden;
+            background: var(--card-alto);
+            border: 1px solid var(--borde);
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            gap: 12px;
+            transition: transform 0.55s ease;
+        }
+
+        .flash .frente {
+            transform: rotateY(0deg);
+        }
+
+        .flash .reverso {
+            transform: rotateY(180deg);
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .flash.volteada .frente {
+            transform: rotateY(180deg);
+        }
+
+        .flash.volteada .reverso {
+            transform: rotateY(0deg);
+        }
+
+        .flash .cara .texto {
+            font-size: 1.3rem;
+            line-height: 1.5;
+        }
+
+        .flash .cara .pista {
+            font-size: 0.78rem;
+            color: var(--tenue);
+            margin-top: auto;
+        }
+
+        .rejilla-niveles {
+            display: grid;
+            gap: 14px;
+        }
+
+        .fila-nivel {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+        }
+
+        .fila-nivel .nombre {
+            min-width: 82px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .fila-nivel .barra {
+            flex: 1 1 160px;
+        }
+
+        .fila-nivel .val {
+            min-width: 92px;
+            text-align: right;
+            font-size: 0.85rem;
+            color: var(--suave);
+        }
+
+        .estado {
+            padding: 3px 11px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .estado.dominado { background: rgba(74, 222, 128, 0.18); color: var(--facil); }
+        .estado.bueno { background: rgba(96, 165, 250, 0.18); color: #93c5fd; }
+        .estado.practica { background: rgba(251, 191, 36, 0.18); color: var(--medio); }
+        .estado.debil { background: rgba(248, 113, 113, 0.18); color: var(--dificil); }
+        .estado.sindatos { background: rgba(148, 163, 184, 0.18); color: var(--tenue); }
+
+        .grafico {
+            display: flex;
+            align-items: flex-end;
+            gap: 8px;
+            height: 160px;
+            padding: 10px 0;
+        }
+
+        .grafico .columna {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .grafico .barra-col {
+            width: 100%;
+            max-width: 46px;
+            background: linear-gradient(180deg, #818cf8, #4f46e5);
+            border-radius: 8px 8px 0 0;
+            min-height: 4px;
+            transition: height 0.6s ease;
+        }
+
+        .grafico .columna span {
+            font-size: 0.68rem;
+            color: var(--tenue);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+        }
+
+        .tabla {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .tabla th, .tabla td {
+            text-align: left;
+            padding: 11px 10px;
+            border-bottom: 1px solid var(--borde);
+        }
+
+        .tabla th {
+            color: var(--tenue);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .tabla tr:last-child td {
+            border-bottom: none;
+        }
+
+        .scroll-x {
+            overflow-x: auto;
+        }
+
+        .aviso {
+            background: rgba(251, 191, 36, 0.14);
+            border-left: 3px solid var(--medio);
+            padding: 14px 16px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--suave);
+        }
+
+        .recomendacion {
+            background: rgba(0, 0, 0, 0.22);
+            border: 1px solid var(--borde);
+            border-left: 3px solid var(--dificil);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .recomendacion h4 {
+            margin-bottom: 6px;
+            font-size: 1rem;
+        }
+
+        .recomendacion p {
+            font-size: 0.88rem;
+            color: var(--suave);
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .chip-ideas {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid var(--borde);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 0.78rem;
+            color: var(--suave);
+            margin: 3px 4px 0 0;
+        }
+
+        .toast-zona {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .toast {
+            background: rgba(17, 24, 39, 0.95);
+            border: 1px solid var(--borde);
+            border-left: 3px solid #818cf8;
+            padding: 13px 18px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            max-width: 320px;
+            animation: entrar 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .toast.mal { border-left-color: var(--dificil); }
+        .toast.bien { border-left-color: var(--facil); }
+
+        @keyframes entrar {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .pasos {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .paso {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 0.8rem;
+            color: var(--tenue);
+        }
+
+        .paso .n {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: var(--card-alto);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.72rem;
+            border: 1px solid var(--borde);
+        }
+
+        .paso.listo .n {
+            background: #6366f1;
+            color: white;
+            border-color: transparent;
+        }
+
+        .paso.listo {
+            color: var(--suave);
+        }
+
+        .oculto { display: none !important; }
+
+        footer {
+            text-align: center;
+            color: var(--tenue);
+            font-size: 0.8rem;
+            margin-top: 40px;
+            padding: 0 20px;
+        }
+
+        @media (max-width: 600px) {
+            header h1 { font-size: 1.7rem; }
+            .panel { padding: 18px; }
+            .quiz-caja { padding: 20px; }
+            .quiz-pregunta { font-size: 1.08rem; }
+            .puntuacion { width: 140px; height: 140px; }
+            .puntuacion .cifra { font-size: 2.2rem; }
+            nav.pestanas button { padding: 9px 14px; font-size: 0.85rem; }
+        }
+    </style>
+</head>
+<body>
+    <button class="volver" onclick="location.href='index.html'">← Volver</button>
+
+    <header>
+        <h1>Asistente de Estudio IA</h1>
+        <p>Crea preguntas y tarjetas, haz quizzes y descubre qué temas reforzar</p>
+    </header>
+
+    <div class="cinta" id="cinta"></div>
+
+    <nav class="pestanas" id="pestanas">
+        <button data-vista="temas" class="activa">📚 Temas</button>
+        <button data-vista="preguntas">❓ Preguntas</button>
+        <button data-vista="tarjetas">🃏 Tarjetas</button>
+        <button data-vista="quiz">🎯 Quiz</button>
+        <button data-vista="progreso">📈 Progreso</button>
+    </nav>
+
+    <main>
+        <section class="vista activa" id="vista-temas">
+            <div class="panel">
+                <h2>1 · Crear un tema</h2>
+                <p class="ayuda">Escribe el nombre del tema y pega tus apuntes. El asistente analiza el texto, detecta los conceptos clave y los usa para crear preguntas y tarjetas de estudio.</p>
+                <label for="tema-nombre">Nombre del tema</label>
+                <input type="text" id="tema-nombre" placeholder="Ejemplo: La Primera Guerra Mundial">
+                <label for="tema-notas">Tus apuntes (o texto del libro)</label>
+                <textarea id="tema-notas" placeholder="Escribe aquí lo que estudiaste.&#10;&#10;Ejemplo:&#10;La fotosíntesis es el proceso por el que las plantas convierten la luz en alimento.&#10;Ocurre principalmente en los cloroplastos.&#10;El agua y el dióxido de carbono son reactivos."></textarea>
+                <div class="niveles" id="tema-niveles">
+                    <label class="nivel-chip on facil"><input type="checkbox" value="facil" checked> Fácil (recordar)</label>
+                    <label class="nivel-chip on medio"><input type="checkbox" value="medio" checked> Medio (entender)</label>
+                    <label class="nivel-chip on dificil"><input type="checkbox" value="dificil" checked> Difícil (aplicar)</label>
+                </div>
+                <div class="fila" style="margin-top:18px">
+                    <div>
+                        <label for="tema-cantidad">Número de preguntas a generar</label>
+                        <select id="tema-cantidad">
+                            <option value="6">6 (mínimo)</option>
+                            <option value="10" selected>10 (recomendado)</option>
+                            <option value="16">16</option>
+                            <option value="24">24</option>
+                        </select>
+                    </div>
+                    <div class="auto">
+                        <button class="btn" onclick="crearTema()">Generar con IA</button>
+                    </div>
+                    <div class="auto">
+                        <button class="btn sec" onclick="cargarEjemplo()">Probar con ejemplo</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>2 · Mis temas</h2>
+                <p class="ayuda">Cada tema muestra tu nivel de dominio según los quizzes que hayas hecho.</p>
+                <div class="rejilla" id="lista-temas"></div>
+            </div>
+        </section>
+
+        <section class="vista" id="vista-preguntas">
+            <div class="panel">
+                <h2>Banco de preguntas</h2>
+                <p class="ayuda">Filtra, revisa, añade o elimina preguntas. Las que creó la IA se pueden regenerar en cualquier momento.</p>
+                <div class="fila">
+                    <div>
+                        <label for="filtro-tema">Tema</label>
+                        <select id="filtro-tema" onchange="renderPreguntas()"></select>
+                    </div>
+                    <div>
+                        <label for="filtro-nivel">Dificultad</label>
+                        <select id="filtro-nivel" onchange="renderPreguntas()">
+                            <option value="">Todas</option>
+                            <option value="facil">Fácil</option>
+                            <option value="medio">Medio</option>
+                            <option value="dificil">Difícil</option>
+                        </select>
+                    </div>
+                    <div class="auto">
+                        <button class="btn sec" onclick="abrirFormularioManual()">+ Añadir a mano</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel oculto" id="panel-manual">
+                <h2>Nueva pregunta manual</h2>
+                <div class="fila">
+                    <div>
+                        <label for="man-tema">Tema</label>
+                        <select id="man-tema"></select>
+                    </div>
+                    <div>
+                        <label for="man-nivel">Dificultad</label>
+                        <select id="man-nivel">
+                            <option value="facil">Fácil</option>
+                            <option value="medio" selected>Medio</option>
+                            <option value="dificil">Difícil</option>
+                        </select>
+                    </div>
+                </div>
+                <label for="man-enunciado">Enunciado</label>
+                <input type="text" id="man-enunciado" placeholder="¿Cuál es la capital de Francia?">
+                <label>Opción A <input type="text" id="man-a" placeholder="Respuesta"></label>
+                <label>Opción B <input type="text" id="man-b" placeholder="Respuesta"></label>
+                <label>Opción C <input type="text" id="man-c" placeholder="Respuesta"></label>
+                <label>Opción D <input type="text" id="man-d" placeholder="Respuesta"></label>
+                <label for="man-correcta">Opción correcta</label>
+                <select id="man-correcta">
+                    <option value="0">A</option>
+                    <option value="1">B</option>
+                    <option value="2">C</option>
+                    <option value="3">D</option>
+                </select>
+                <label for="man-explicacion">Explicación (opcional, se muestra al responder)</label>
+                <input type="text" id="man-explicacion" placeholder="Ejemplo: Paris es la capital de Francia desde 987.">
+                <div class="fila" style="margin-top:18px">
+                    <div class="auto"><button class="btn" onclick="guardarPreguntaManual()">Guardar pregunta</button></div>
+                    <div class="auto"><button class="btn sec" onclick="cerrarFormularioManual()">Cancelar</button></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2 id="contador-preguntas">Preguntas</h2>
+                <div id="lista-preguntas"></div>
+            </div>
+        </section>
+
+        <section class="vista" id="vista-tarjetas">
+            <div class="panel">
+                <h2>Sesión de flashcards</h2>
+                <p class="ayuda">El sistema de repetición espaciada decide cuándo volver a mostrarte cada tarjeta: si fallas, vuelve a aparecer pronto; si la dominas, espera más tiempo.</p>
+                <div class="pasos" id="pasos-flash"></div>
+                <div class="fila">
+                    <div>
+                        <label for="flash-tema">Tema</label>
+                        <select id="flash-tema"></select>
+                    </div>
+                    <div class="auto">
+                        <button class="btn" onclick="iniciarFlashcards()">Empezar sesión</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel oculto" id="panel-flash">
+                <div id="flash-tarjeta"></div>
+                <div class="fila" id="flash-controles" style="margin-top:6px">
+                    <div class="auto"><button class="btn sec" id="flash-girar" onclick="girarFlashcard()">Girar tarjeta</button></div>
+                    <div class="auto"><button class="btn peligro" id="flash-no" onclick="responderFlashcard(0)">No lo sé</button></div>
+                    <div class="auto"><button class="btn" id="flash-si" onclick="responderFlashcard(1)">Lo sé</button></div>
+                    <div class="auto"><button class="btn sec" id="flash-fin" onclick="terminarFlashcards()">Terminar</button></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>Colección de tarjetas</h2>
+                <p class="ayuda">Tarjetas pendientes de repaso hoy y total de cada tema.</p>
+                <div id="lista-tarjetas"></div>
+            </div>
+        </section>
+
+        <section class="vista" id="vista-quiz">
+            <div class="panel" id="quiz-config">
+                <h2>Preparar un quiz</h2>
+                <p class="ayuda">Elige el tema, la cantidad de preguntas y el nivel. El modo inteligente prioriza justo lo que necesitas repasar.</p>
+                <div class="fila">
+                    <div>
+                        <label for="quiz-tema">Tema</label>
+                        <select id="quiz-tema"></select>
+                    </div>
+                    <div>
+                        <label for="quiz-cantidad">Cantidad de preguntas</label>
+                        <select id="quiz-cantidad">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="15">15</option>
+                            <option value="20">20</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="quiz-modo">Modo</label>
+                        <select id="quiz-modo">
+                            <option value="normal">Normal</option>
+                            <option value="inteligente">Inteligente (repasa lo débil)</option>
+                            <option value="mixto">Mixto (todos los temas)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="quiz-nivel">Dificultad</label>
+                        <select id="quiz-nivel">
+                            <option value="mixto" selected>Mixta</option>
+                            <option value="facil">Fácil</option>
+                            <option value="medio">Medio</option>
+                            <option value="dificil">Difícil</option>
+                            <option value="debil">Mi nivel más débil</option>
+                        </select>
+                    </div>
+                    <div class="auto">
+                        <button class="btn" onclick="empezarQuiz()">Comenzar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel oculto" id="quiz-juego">
+                <div class="quiz-caja">
+                    <div class="quiz-progreso">
+                        <span id="quiz-pos">Pregunta 1 de 10</span>
+                        <span id="quiz-marcador">Puntos: 0</span>
+                    </div>
+                    <div class="barra"><div id="quiz-barra" style="width:0%;background:linear-gradient(90deg,#818cf8,#67e8f9)"></div></div>
+                    <div id="quiz-marca-tiempo"></div>
+                    <div class="quiz-pregunta" id="quiz-enunciado"></div>
+                    <div class="quiz-opciones" id="quiz-opciones"></div>
+                    <div class="explicacion oculto" id="quiz-explicacion"></div>
+                    <div class="fila" style="margin-top:20px">
+                        <div class="auto">
+                            <button class="btn oculto" id="quiz-comprobar" onclick="comprobarMultiple()">Comprobar</button>
+                        </div>
+                        <div class="auto">
+                            <button class="btn oculto" id="quiz-saltar" onclick="saltarPregunta()">Saltar</button>
+                        </div>
+                        <div class="auto">
+                            <button class="btn oculto" id="quiz-siguiente" onclick="siguientePregunta()">Siguiente →</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel oculto" id="quiz-resultado">
+                <div style="text-align:center">
+                    <h2 id="resultado-titulo">¡Quiz terminado!</h2>
+                    <div class="puntuacion">
+                        <span class="cifra" id="resultado-num">0</span>
+                        <span class="unidad" id="resultado-den">de 10</span>
+                    </div>
+                    <p id="resultado-msg" style="margin-bottom:18px"></p>
+                    <div class="acciones" style="justify-content:center">
+                        <button class="btn" onclick="empezarQuiz()">Repetir quiz</button>
+                        <button class="btn sec" onclick="irA('progreso')">Ver mi progreso</button>
+                        <button class="btn sec" onclick="irA('quiz')">Cambiar ajustes</button>
+                    </div>
+                </div>
+                <div style="margin-top:26px">
+                    <h3 style="font-size:1.05rem;margin-bottom:12px">Revisión pregunta por pregunta</h3>
+                    <div id="resultado-revision"></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="vista" id="vista-progreso">
+            <div class="panel">
+                <h2>Mi nivel por tema</h2>
+                <p class="ayuda">El dominio se calcula con los quizzes más recientes, dando más peso a los últimos resultados y a la cantidad de preguntas respondidas.</p>
+                <div id="panel-niveles"></div>
+            </div>
+
+            <div class="panel">
+                <h2>Temas que necesitan más práctica</h2>
+                <p class="ayuda">Estas son las recomendaciones del asistente, ordenadas por urgencia.</p>
+                <div id="panel-recomendaciones"></div>
+            </div>
+
+            <div class="panel">
+                <h2>Conceptos que debes reforzar</h2>
+                <p class="ayuda">Tus errores más frecuentes, contados pregunta a pregunta.</p>
+                <div id="panel-conceptos"></div>
+            </div>
+
+            <div class="panel">
+                <h2>Historial de quizzes</h2>
+                <p class="ayuda">Últimos resultados y evolución del rendimiento.</p>
+                <div id="panel-grafico"></div>
+                <div class="scroll-x" id="panel-historial"></div>
+            </div>
+
+            <div class="panel">
+                <h2>Tus datos</h2>
+                <p class="ayuda">Todo se guarda solo en este navegador. Puedes hacer una copia de seguridad o empezar de cero.</p>
+                <div class="acciones">
+                    <button class="btn sec pequeno" onclick="exportarDatos()">Exportar copia</button>
+                    <button class="btn sec pequeno" onclick="importarDatos()">Importar copia</button>
+                    <button class="btn sec pequeno" onclick="cargarEjemplo()">Añadir tema de ejemplo</button>
+                    <button class="btn peligro pequeno" onclick="borrarTodo()">Borrar todo</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        Motor de contenido inteligente · Funciona sin internet · Tus datos nunca salen de este dispositivo
+    </footer>
+
+    <div class="toast-zona" id="toast-zona"></div>
+
+    <script>
+        'use strict';
+        const $ = (sel, raiz) => (raiz || document).querySelector(sel);
+        const $$ = (sel, raiz) => Array.from((raiz || document).querySelectorAll(sel));
+        const CLAVE = 'asistente-estudio-v1';
+        const DIAS = 86400000;
+        const LETRAS = ['A', 'B', 'C', 'D', 'E', 'F'];
+        const NOMBRES_NIVEL = { facil: 'Fácil', medio: 'Medio', dificil: 'Difícil' };
+        const PUNTOS = { facil: 10, medio: 15, dificil: 20 };
+
+        function esc(texto) {
+            return String(texto === null || texto === undefined ? '' : texto).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        function escRegex(texto) {
+            return String(texto).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        function uid(prefijo) {
+            return (prefijo || 'id') + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+        }
+
+        function barajar(lista) {
+            for (let i = lista.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                const aux = lista[i];
+                lista[i] = lista[j];
+                lista[j] = aux;
+            }
+            return lista;
+        }
+
+        function recortar(texto, maximo) {
+            const limpio = String(texto).trim();
+            return limpio.length > maximo ? limpio.slice(0, maximo - 1).trim() + '…' : limpio;
+        }
+
+        function quitarAnexo(texto) {
+            return String(texto)
+                .replace(/^(?:el|la|los|las|un|una|unos|unas|este|esta|esto|ese|esa)\s+/i, '')
+                .replace(/[.;:!?]+$/, '')
+                .trim();
+        }
+
+        function fechaCorta(marca) {
+            const d = new Date(marca);
+            return d.getDate() + '/' + (d.getMonth() + 1);
+        }
+
+        function fechaLarga(marca) {
+            const d = new Date(marca);
+            return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) + ' ' +
+                d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function plural(numero, singular, pluralForma) {
+            return numero === 1 ? singular : pluralForma;
+        }
+
+        function toast(mensaje, tipo) {
+            const zona = $('#toast-zona');
+            if (!zona) return;
+            const el = document.createElement('div');
+            el.className = 'toast' + (tipo ? ' ' + tipo : '');
+            el.textContent = mensaje;
+            zona.appendChild(el);
+            setTimeout(function () {
+                el.style.opacity = '0';
+                el.style.transition = 'opacity .4s ease';
+                setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 400);
+            }, 3200);
+        }
+
+        function nivelTexto(nivel) {
+            return NOMBRES_NIVEL[nivel] || nivel;
+        }
+
+        function nivelColor(porcentaje) {
+            if (porcentaje === null) return 'rgba(148,163,184,.45)';
+            if (porcentaje >= 85) return 'var(--facil)';
+            if (porcentaje >= 70) return '#60a5fa';
+            if (porcentaje >= 50) return 'var(--medio)';
+            return 'var(--dificil)';
+        }
+
+        function estadoDominio(porcentaje) {
+            if (porcentaje === null) return { clase: 'sindatos', texto: 'Sin datos' };
+            if (porcentaje >= 85) return { clase: 'dominado', texto: 'Dominado' };
+            if (porcentaje >= 70) return { clase: 'bueno', texto: 'Buen nivel' };
+            if (porcentaje >= 50) return { clase: 'practica', texto: 'Necesita práctica' };
+            return { clase: 'debil', texto: 'Repasar ya' };
+        }
+
+        let E = null;
+
+        function estadoVacio() {
+            return { version: 1, temas: [], preguntas: [], tarjetas: [], intentos: [], revision: {}, creado: Date.now() };
+        }
+
+        function normalizar(datos) {
+            const base = estadoVacio();
+            if (!datos || typeof datos !== 'object') return base;
+            if (Array.isArray(datos.temas)) {
+                base.temas = datos.temas.filter(function (t) { return t && typeof t.nombre === 'string'; })
+                    .map(function (t) {
+                        return {
+                            id: t.id || uid('tema'),
+                            nombre: String(t.nombre).trim(),
+                            notas: typeof t.notas === 'string' ? t.notas : '',
+                            creado: t.creado || Date.now()
+                        };
+                    });
+            }
+            if (Array.isArray(datos.preguntas)) {
+                base.preguntas = datos.preguntas.filter(function (p) { return p && p.enunciado && Array.isArray(p.opciones); })
+                    .map(function (p) {
+                        const indices = Array.isArray(p.correcta) ? p.correcta : [p.correcta];
+                        const validos = indices.filter(function (i) { return typeof i === 'number' && i >= 0 && i < p.opciones.length; });
+                        return {
+                            id: p.id || uid('p'),
+                            temaId: p.temaId || null,
+                            tipo: p.tipo || 'manual',
+                            enunciado: String(p.enunciado),
+                            opciones: p.opciones.map(String),
+                            correcta: validos.length ? validos : [0],
+                            varias: !!p.varias || validos.length > 1,
+                            dificultad: (p.dificultad === 'medio' || p.dificultad === 'dificil') ? p.dificultad : 'facil',
+                            explicacion: p.explicacion ? String(p.explicacion) : '',
+                            clave: p.clave ? String(p.clave) : '',
+                            auto: !!p.auto,
+                            creado: p.creado || Date.now()
+                        };
+                    }).filter(function (p) { return p.opciones.length >= 2 && p.correcta.length >= 1; });
+            }
+            if (Array.isArray(datos.tarjetas)) {
+                base.tarjetas = datos.tarjetas.filter(function (c) { return c && c.frente && c.reverso; })
+                    .map(function (c) {
+                        return {
+                            id: c.id || uid('c'),
+                            temaId: c.temaId || null,
+                            frente: String(c.frente),
+                            reverso: String(c.reverso),
+                            detalle: c.detalle ? String(c.detalle) : '',
+                            dificultad: (c.dificultad === 'medio' || c.dificultad === 'dificil') ? c.dificultad : 'facil',
+                            clave: c.clave ? String(c.clave) : '',
+                            auto: !!c.auto,
+                            creado: c.creado || Date.now()
+                        };
+                    });
+            }
+            if (Array.isArray(datos.intentos)) {
+                base.intentos = datos.intentos.filter(function (i) { return i && Array.isArray(i.detalle); })
+                    .map(function (i) {
+                        return {
+                            id: i.id || uid('i'),
+                            temaId: i.temaId || null,
+                            titulo: i.titulo || 'Quiz',
+                            modo: i.modo || 'normal',
+                            fecha: i.fecha || Date.now(),
+                            duracion: Number(i.duracion) || 0,
+                            puntos: Number(i.puntos) || 0,
+                            total: Number(i.total) || (i.detalle ? i.detalle.length : 0),
+                            aciertos: Number(i.aciertos) || 0,
+                            nivel: i.nivel || 'mixto',
+                            detalle: i.detalle.map(function (d) {
+                                return {
+                                    id: d.id || '',
+                                    clave: d.clave || '',
+                                    temaId: d.temaId || i.temaId || null,
+                                    dificultad: d.dificultad || 'facil',
+                                    acierto: !!d.acierto,
+                                    omitida: !!d.omitida,
+                                    respondida: !!d.respondida
+                                };
+                            })
+                        };
+                    });
+            }
+            if (datos.revision && typeof datos.revision === 'object') base.revision = datos.revision;
+            return base;
+        }
+
+        function cargar() {
+            let existed = false;
+            try {
+                const crudo = localStorage.getItem(CLAVE);
+                if (crudo) {
+                    E = normalizar(JSON.parse(crudo));
+                    existed = E.temas.length > 0;
+                } else {
+                    E = estadoVacio();
+                }
+            } catch (err) {
+                E = estadoVacio();
+            }
+            if (!existed) {
+                crearTemaEjemplo(true);
+            }
+        }
+
+        function guardar() {
+            try {
+                localStorage.setItem(CLAVE, JSON.stringify(E));
+            } catch (err) {
+                toast('No se pudo guardar los datos en este navegador.', 'mal');
+            }
+        }
+
+        function temaPorId(id) {
+            for (let i = 0; i < E.temas.length; i++) {
+                if (E.temas[i].id === id) return E.temas[i];
+            }
+            return null;
+        }
+
+        function nombreTema(id) {
+            const t = temaPorId(id);
+            return t ? t.nombre : 'Sin tema';
+        }
+
+        const PARADAS_RAW = [
+            'de la el los las un una unos unas y o u en del al por con para que se su sus lo es son fue fueron era eran ser',
+            'estar esta estan estas este esto esos esas a al han ha hacer hace hacen pueda pueden puede deben debe',
+            'como más muy pero sin sobre entre cuando donde cual cuales porque si no ya le les nos nuestro nuestra nuestro',
+            'cada todo toda todos todas otro otra otros otras mismo misma tan tanto tambien nunca siempre mucho poco',
+            'desde tras según segun ante bajo cabe hacia durante mediante之于 cual cuales apenas aunque sino mientras',
+            'ejemplo tambien aquí aqui alli allí entonces pues luego despues después antes ahora bien mal mas menos',
+            'tambien otra vez solo solo vez cosa cosas manera forma modo parte partes lugar tiempo veces'
+        ];
+
+        const PARADAS = (function () {
+            const set = new Set();
+            PARADAS_RAW.forEach(function (linea) {
+                linea.split(/\s+/).forEach(function (palabra) {
+                    if (palabra && palabra.length > 1) set.add(palabra);
+                });
+            });
+            return set;
+        })();
+
+        const AJENOS_RAW = [
+            'alquimia', 'manifiesto', 'amalgama', 'cronómetro', 'desintegrar', 'embajador', 'expedición', 'filamento',
+            'gremio', 'humo', 'incrustar', 'jinete', 'laberinto', 'maletín', 'navegar', 'obstáculo', 'pararrayos',
+            'quijongo', 'racimo', 'sello', 'tornillo', 'urdimbre', 'vagabundo', 'yunque', 'zafiro', 'enjambre',
+            'cascote', 'dintel', 'escarpa', 'fragua', 'garganta', 'herradura', 'ictericia', 'jarabe', 'ladrillo',
+            'mostaza', 'nuez', 'octava', 'parche', 'quijada', 'ronda', 'sartén', 'tenedor', 'usb', 'vado', 'yegua'
+        ];
+
+        const AJENOS = AJENOS_RAW;
+
+        function palabrasClave(texto) {
+            const crudas = String(texto).toLowerCase().match(/[a-záéíóúñü]{4,}/g) || [];
+            const salida = [];
+            for (let i = 0; i < crudas.length; i++) {
+                if (!PARADAS.has(crudas[i]) && salida.indexOf(crudas[i]) === -1) salida.push(crudas[i]);
+            }
+            return salida;
+        }
+
+        function similitud(a, b) {
+            const A = palabrasClave(a);
+            const B = palabrasClave(b);
+            if (!A.length || !B.length) return 0;
+            let comunes = 0;
+            for (let i = 0; i < A.length; i++) {
+                if (B.indexOf(A[i]) !== -1) comunes++;
+            }
+            return comunes / Math.min(A.length, B.length);
+        }
+
+        function separarOraciones(texto) {
+            const limpio = String(texto).replace(/\r/g, '');
+            const trozos = limpio.split(/(?:\r?\n)+|[.!?;]+(?:\s+|$)|[.!?;]+$/);
+            const salida = [];
+            for (let i = 0; i < trozos.length; i++) {
+                const t = trozos[i].replace(/\s+/g, ' ').trim();
+                if (t.length >= 12) salida.push(t);
+            }
+            return salida;
+        }
+
+        const PATRONES_DEF = [
+            { re: /^([^:.;!?]{2,55}?)\s*:\s*(.{5,})$/, tipo: 'lista' },
+            { re: /^(.{2,55}?)\s+se\s+define\s+como\s+(.{5,})$/i, tipo: 'definicion' },
+            { re: /^(.{2,55}?)\s+significa\s+(.{5,})$/i, tipo: 'significado' },
+            { re: /^(.{2,55}?)\s+consiste\s+en\s+(.{5,})$/i, tipo: 'composicion' },
+            { re: /^(.{2,55}?)\s+se\s+compone\s+de\s+(.{5,})$/i, tipo: 'composicion' },
+            { re: /^(.{2,55}?)\s+está\s+formad[oa]\s+por\s+(.{5,})$/i, tipo: 'composicion' },
+            { re: /^(.{2,55}?)\s+se\s+caracteriza\s+por\s+(.{5,})$/i, tipo: 'caracteristica' },
+            { re: /^(.{2,55}?)\s+se\s+llama\s+(.{5,})$/i, tipo: 'nombre' },
+            { re: /^(.{2,55}?)\s+representa\s+(.{5,})$/i, tipo: 'representa' },
+            { re: /^(.{2,55}?)\s+equivale\s+a\s+(.{5,})$/i, tipo: 'equivalencia' },
+            { re: /^(.{2,55}?)\s+se\s+refiere\s+a\s+(.{5,})$/i, tipo: 'definicion' },
+            { re: /^(.{2,55}?)\s+(?:es|son)\s+(.{5,})$/i, tipo: 'ser' }
+        ];
+
+        const RE_ARTICULO = /^(?:el|la|los|las|un|una|unos|unas|este|esta|esto|ese|esa|del)\s+/i;
+
+        function detectarDefinicion(oracion) {
+            for (let i = 0; i < PATRONES_DEF.length; i++) {
+                const m = oracion.match(PATRONES_DEF[i].re);
+                if (m) {
+                    let sujeto = quitarAnexo(m[1]);
+                    let valor = m[2].trim();
+                    if (sujeto.length < 2 || valor.length < 5) continue;
+                    if (sujeto.split(/\s+/).length > 6) continue;
+                    if (/^(?:un|una|el|la|los|las)$/i.test(valor)) continue;
+                    return { tipo: PATRONES_DEF[i].tipo, sujeto: sujeto, valor: valor };
+                }
+            }
+            return null;
+        }
+
+        function detectarEnumeracion(oracion) {
+            const m = oracion.match(/^(.{2,55}?)\s+(?:son|son:|incluyen|comprenden|constan de|son:)\s+(.{6,})$/i);
+            if (!m) return null;
+            let sujeto = quitarAnexo(m[1]);
+            let resto = m[2].trim();
+            const partes = resto.split(/\s*(?:,|;|\by\b|\bo\b)\s*/i).map(function (p) { return p.replace(/[.;]+$/, '').trim(); });
+            const utiles = partes.filter(function (p) { return p.length >= 2 && p.split(/\s+/).length <= 4 && !/^(?:un|una|el|la|los|las)$/i.test(p); });
+            if (utiles.length < 2) return null;
+            return { sujeto: sujeto, elementos: utiles };
+        }
+
+        function analizarNotas(texto) {
+            const oraciones = separarOraciones(texto);
+            const defs = [];
+            const enums = [];
+
+            for (let i = 0; i < oraciones.length; i++) {
+                const o = oraciones[i];
+                const d = detectarDefinicion(o);
+                if (d) defs.push({ oracion: o, indice: i, tipo: d.tipo, sujeto: d.sujeto, valor: d.valor });
+                const e = detectarEnumeracion(o);
+                if (e) enums.push({ oracion: o, indice: i, sujeto: e.sujeto, elementos: e.elementos });
+            }
+
+            const conteo = new Map();
+            const info = new Map();
+            const RE_PAL = /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ][A-Za-zÁÉÍÓÚÜÑáéíóúüñ\-\/]{2,}/g;
+
+            for (let i = 0; i < oraciones.length; i++) {
+                const o = oraciones[i];
+                const palabras = o.match(RE_PAL) || [];
+                const esInicio = i === 0;
+                for (let j = 0; j < palabras.length; j++) {
+                    const original = palabras[j];
+                    const baja = original.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                    if (PARADAS.has(baja) || PARADAS.has(original.toLowerCase())) continue;
+                    if (/^\d+$/.test(original)) continue;
+                    let ficha = info.get(original);
+                    if (!ficha) {
+                        ficha = { texto: original, n: 0, oraciones: new Set(), enSujeto: false, capital: false };
+                        info.set(original, ficha);
+                    }
+                    ficha.n++;
+                    ficha.oraciones.add(i);
+                    if (original[0] === original[0].toUpperCase() && original[0] !== original[0].toLowerCase()) {
+                        ficha.capital = true;
+                    }
+                    if (j === 0 && !esInicio) ficha.capital = true;
+                }
+            }
+
+            for (let i = 0; i < defs.length; i++) {
+                const RE_T = new RegExp('(^|[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9])' + escRegex(defs[i].sujeto) + '([^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]|$)', 'i');
+                info.forEach(function (ficha) {
+                    if (RE_T.test(ficha.texto)) ficha.enSujeto = true;
+                });
+            }
+
+            const terminos = [];
+            info.forEach(function (ficha) {
+                let peso = 0;
+                peso += Math.min(ficha.n, 6) * 1.1;
+                peso += Math.min(ficha.texto.length, 16) / 16 * 1.5;
+                if (ficha.capital) peso += 1.1;
+                if (ficha.enSujeto) peso += 2.2;
+                if (ficha.oraciones.size >= 3) peso += 0.9;
+                if (/^\d{4}$/.test(ficha.texto)) peso += 0.8;
+                if (ficha.texto.split(/\s+/).length === 1 && ficha.texto.length >= 5) peso += 0.6;
+                terminos.push({
+                    texto: ficha.texto,
+                    peso: Math.round(peso * 100) / 100,
+                    apariciones: ficha.n,
+                    frases: ficha.oraciones.size,
+                    enSujeto: ficha.enSujeto
+                });
+            });
+
+            terminos.sort(function (a, b) { return b.peso - a.peso; });
+
+            const definiciones = [];
+            for (let i = 0; i < defs.length; i++) {
+                if (defs[i].sujeto.split(/\s+/).length > 5) continue;
+                definiciones.push(defs[i]);
+            }
+
+            return {
+                oraciones: oraciones,
+                definiciones: definiciones,
+                enumeraciones: enums,
+                terminos: terminos,
+                textoCompleto: String(texto)
+            };
+        }
+
+        function frasesDe(analisis, termino) {
+            const re = new RegExp('\\b' + escRegex(termino) + '\\b', 'i');
+            return analisis.oraciones.filter(function (o) { return re.test(o); });
+        }
+
+        function terminosUsables(analisis) {
+            return analisis.terminos.map(function (t) {
+                return t.texto.replace(/[^\p{L}\s\-]/gu, '').trim();
+            }).filter(function (t) { return t.length >= 3 && t.split(/\s+/).length <= 4; });
+        }
+
+        function construirOpciones(correctas, distractores, opciones) {
+            const items = [];
+            for (let i = 0; i < correctas.length; i++) items.push({ t: correctas[i], ok: true });
+            for (let i = 0; i < distractores.length; i++) {
+                if (correctas.indexOf(distractores[i]) === -1) items.push({ t: distractores[i], ok: false });
+            }
+            barajar(items);
+            const salida = { opciones: [], correcta: [] };
+            for (let i = 0; i < items.length; i++) {
+                salida.opciones.push(opciones && opciones.recortar ? recortar(items[i].t, opciones.recortar) : items[i].t);
+                if (items[i].ok) salida.correcta.push(i);
+            }
+            return salida;
+        }
+
+        function elegirDistractores(candidatos, correcta, cuantos, evitar) {
+            const lista = [];
+            for (let i = 0; i < candidatos.length; i++) {
+                const c = candidatos[i];
+                if (!c) continue;
+                const texto = typeof c === 'string' ? c : c.texto;
+                if (!texto) continue;
+                if (correcta.indexOf(texto) !== -1) continue;
+                if (evitar && evitar.indexOf(texto) !== -1) continue;
+                if (lista.indexOf(texto) === -1) lista.push(texto);
+            }
+            lista.sort(function (a, b) {
+                const s = similitud(b, correcta) - similitud(a, correcta);
+                if (Math.abs(s) > 0.001) return s;
+                return Math.abs(a.length - correcta.length) - Math.abs(b.length - correcta.length);
+            });
+            const mitadLista = lista.slice(0, Math.max(cuantos, Math.ceil(lista.length / 2)));
+            const colaLista = lista.slice(mitadLista.length);
+            barajar(mitadLista);
+            barajar(colaLista);
+            return mitadLista.concat(colaLista).slice(0, cuantos);
+        }
+
+        function fueraDeNotas(analisis, n) {
+            const RE_PAL = /[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{4,}/g;
+            const palabras = (analisis.textoCompleto.match(RE_PAL) || []).map(function (p) { return p.toLowerCase(); });
+            const libres = [];
+            for (let i = 0; i < AJENOS.length; i++) {
+                if (palabras.indexOf(AJENOS[i]) === -1) libres.push(AJENOS[i]);
+            }
+            barajar(libres);
+            return libres.slice(0, n);
+        }
+
+        function envolver(oracion, termino) {
+            const re = new RegExp('(^|[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9])(' + escRegex(termino) + ')([^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]|$)', 'i');
+            return String(oracion).replace(re, function (todo, antes, matched, despues) {
+                return antes + '__T__' + despues;
+            });
+        }
+
+        function hueco(oracion, termino) {
+            return envolver(oracion, termino).replace('__T__', '______');
+        }
+
+        function marcaTermino(oracion, termino) {
+            const re = new RegExp('(^|[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9])(' + escRegex(termino) + ')([^A-Za-zÁÉÍÓÚÜÑáéíóúüñ0-9]|$)', 'i');
+            return String(oracion).replace(re, function (todo, antes, matched, despues) {
+                return antes + '[' + matched + ']' + despues;
+            });
+        }
+
+        function primera(oraciones) {
+            return oraciones && oraciones.length ? oraciones[0] : '';
+        }
+
+        function generarPreguntas(tema, analisis, pedidasPorNivel) {
+            const tildes = {
+                facil: pedidasPorNivel.facil || 0,
+                medio: pedidasPorNivel.medio || 0,
+                dificil: pedidasPorNivel.dificil || 0
+            };
+            analisis.nombreTema = tema.nombre;
+            const candidatos = { facil: [], medio: [], dificil: [] };
+            const defs = analisis.definiciones;
+            const claves = analisis.terminos.map(function (t) { return t.texto; }).slice(0, 14);
+            const terminosLimpios =         terminosUsables(analisis).slice(0, 18);
+            const otrasDefs = defs.slice(0, 12);
+
+            for (let i = 0; i < claves.length; i++) {
+                const clave = claves[i];
+                const conDefinicion = defs.filter(function (d) {
+                    return new RegExp('\\b' + escRegex(clave) + '\\b', 'i').test(d.sujeto);
+                });
+                const frases = frasesDe(analisis, clave);
+                const todasLasValores = defs.map(function (d) { return d.valor; });
+                const otrosConceptos = barajar(defs.filter(function (d) {
+                    return !new RegExp('\\b' + escRegex(clave) + '\\b', 'i').test(d.sujeto);
+                }).slice(0, 6));
+
+                if (frases.length && conDefinicion.length === 0) {
+                    const oracion = frases[0];
+                    const imp = indexDe(hueco(oracion, clave), '______');
+                    if (imp > 3) {
+                        const distract = elegirDistractores(terminosLimpios, clave, 3, [clave]);
+                        if (distract.length === 3) {
+                            const op = construirOpciones([clave], distract, { recortar: 60 });
+                            candidatos.facil.push({
+                                tipo: 'hueco',
+                                clave: clave,
+                                enunciado: 'Completa la frase de tus apuntes:  ' + hueco(oracion, clave),
+                                opciones: op.opciones,
+                                correcta: op.correcta,
+                                varias: false,
+                                explicacion: 'Oración original: «' + recortar(oracion, 200) + '»'
+                            });
+                        }
+                    }
+                }
+
+                if (conDefinicion.length) {
+                    const def = conDefinicion[0];
+                    const distractoresDef = elegirDistractores(todasLasValores, def.valor, 3, [def.valor]);
+                    if (distractoresDef.length === 3) {
+                        const op = construirOpciones([def.valor], distractoresDef, { recortar: 130 });
+                        candidatos.facil.push({
+                            tipo: 'significado',
+                            clave: clave,
+                            enunciado: '¿Qué significa «' + clave + '» según tus apuntes?',
+                            opciones: op.opciones,
+                            correcta: op.correcta,
+                            varias: false,
+                            explicacion: 'Tus apuntes dicen: «' + recortar(def.oracion, 200) + '»'
+                        });
+                    }
+
+                    if (otrosConceptos.length >= 4) {
+                        const falsas = [];
+                        for (let j = 0; j < otrosConceptos.length && falsas.length < 3; j++) {
+                            falsas.push(otrosConceptos[j].sujeto + ' ' + (otrosConceptos[j].valor.charAt(0).toLowerCase() + otrosConceptos[j].valor.slice(1)));
+                        }
+                        const opC = construirOpciones([def.oracion], falsas, { recortar: 140 });
+                        if (falsas.length === 3 && opC.correcta.length === 1) {
+                            candidatos.medio.push({
+                                tipo: 'caracteristica',
+                                clave: clave,
+                                enunciado: '¿Cuál de estas afirmaciones describe correctamente a «' + clave + '»?',
+                                opciones: opC.opciones,
+                                correcta: opC.correcta,
+                                varias: false,
+                                explicacion: 'La información correcta sobre «' + clave + '» es: «' + recortar(def.oracion, 200) + '»'
+                            });
+                        }
+                    }
+
+                    const verdad = Math.random() < 0.5;
+                    const temaAjeno = fueraDeNotas(analisis, 1)[0];
+                    const otroSujeto = otrosConceptos.length ? otrosConceptos[0].sujeto : null;
+                    if (temaAjeno && otroSujeto && otroSujeto.toLowerCase() !== clave.toLowerCase()) {
+                        const alterada = envolver(def.oracion, clave).replace('__T__', otroSujeto);
+                        const frase = verdad ? def.oracion : (alterada.indexOf(otroSujeto) !== -1 ? alterada : null);
+                        if (frase) {
+                            const op = construirOpciones([verdad ? 'Verdadero' : 'Falso'], [verdad ? 'Falso' : 'Verdadero']);
+                            candidatos.facil.push({
+                                tipo: 'verdadero-falso',
+                                clave: clave,
+                                enunciado: '¿Es correcto esta afirmación?  «' + recortar(frase, 190) + '»',
+                                opciones: op.opciones,
+                                correcta: op.correcta,
+                                varias: false,
+                                explicacion: verdad
+                                    ? 'Sí, esa frase aparece en tus apuntes.'
+                                    : 'No: en tus apuntes la frase correcta es «' + recortar(def.oracion, 190) + '»'
+                            });
+                            candidatos.medio.push({
+                                tipo: 'verdadero-falso',
+                                clave: clave,
+                                enunciado: '¿Es correcto esta afirmación?  «' + recortar(frase, 190) + '»',
+                                opciones: op.opciones,
+                                correcta: op.correcta.slice(),
+                                varias: false,
+                                explicacion: verdad
+                                    ? 'Sí, esa frase aparece en tus apuntes.'
+                                    : 'No: en tus apuntes la frase correcta es «' + recortar(def.oracion, 190) + '»'
+                            });
+                        }
+                    }
+
+                    if (otrosConceptos.length >= 3) {
+                        const otrosTerm = otrosConceptos.slice(0, 3);
+                        const distractoresInv = otrosTerm.map(function (d) { return d.sujeto; });
+                        if (distractoresInv.length === 3) {
+                            const op = construirOpciones([clave], distractoresInv, { recortar: 60 });
+                            candidatos.dificil.push({
+                                tipo: 'inversa',
+                                clave: clave,
+                                enunciado: 'Tus apuntes dicen: «' + recortar(def.oracion, 190) + '»  ¿De qué concepto habla?',
+                                opciones: op.opciones,
+                                correcta: op.correcta,
+                                varias: false,
+                                explicacion: 'La frase corresponde a «' + clave + '»: ' + recortar(def.oracion, 200)
+                            });
+                        }
+                    }
+                }
+            }
+
+            if (claves.length >= 4) {
+                const ajena = fueraDeNotas(analisis, 1)[0];
+                const tresReales = barajar(terminosLimpios.slice(0, 10)).slice(0, 3);
+                if (ajena && tresReales.length === 3) {
+                    const op = construirOpciones([ajena], tresReales, { recortar: 50 });
+                    candidatos.medio.push({
+                        tipo: 'ajena',
+                        clave: terminosLimpios[0] || '',
+                        enunciado: '¿Cuál de estos términos NO aparece en tus apuntes?',
+                        opciones: op.opciones,
+                        correcta: op.correcta,
+                        varias: false,
+                        explicacion: 'El término «' + ajena + '» no aparece en tus apuntes. Los otros sí.'
+                    });
+                }
+            }
+
+            for (let i = 0; i < analisis.enumeraciones.length; i++) {
+                const en = analisis.enumeraciones[i];
+                const otrosTerm = terminosLimpios.filter(function (t) {
+                    return en.elementos.map(function (e) { return e.toLowerCase(); }).indexOf(t.toLowerCase()) === -1;
+                });
+                const distractoresEnum = elegirDistractores(otrosTerm, en.elementos.join(' '), 2, en.elementos);
+                if (en.elementos.length >= 3 && en.elementos.length <= 5 && distractoresEnum.length === 2) {
+                    const op = construirOpciones(en.elementos, distractoresEnum, { recortar: 60 });
+                    candidatos.dificil.push({
+                        tipo: 'relaciones',
+                        clave: en.sujeto,
+                        enunciado: 'Según tus apuntes, ¿qué elementos se relacionan con «' + en.sujeto + '»?',
+                        opciones: op.opciones,
+                        correcta: op.correcta,
+                        varias: true,
+                        explicacion: 'Tus apuntes: «' + recortar(en.oracion, 200) + '»'
+                    });
+                }
+
+                const pares = [];
+                for (let j = 0; j < en.elementos.length; j++) {
+                    pares.push(en.sujeto + ' → ' + en.elementos[j]);
+                }
+                const paresBarajados = barajar(pares.slice());
+                if (paresBarajados.length >= 3) {
+                    const correctaPar = paresBarajados[0];
+                    const distractoresPar = [];
+                    for (let j = 1; j < paresBarajados.length && distractoresPar.length < 3; j++) {
+                        const partes = paresBarajados[j].split(' → ');
+                        distractoresPar.push(partes[1] + ' → ' + (partes[0] === en.sujeto ? en.elementos[(j + 1) % en.elementos.length] : partes[0]));
+                    }
+                    if (distractoresPar.length === 3) {
+                        const op = construirOpciones([correctaPar], distractoresPar, { recortar: 60 });
+                        candidatos.dificil.push({
+                            tipo: 'relaciones',
+                            clave: en.sujeto,
+                            enunciado: '¿Cuál de estas relaciones aparece exactamente en tus apuntes?',
+                            opciones: op.opciones,
+                            correcta: op.correcta,
+                            varias: false,
+                            explicacion: 'Tus apuntes: «' + recortar(en.oracion, 200) + '»'
+                        });
+                    }
+                }
+            }
+
+            for (let i = 0; i < claves.length; i++) {
+                const clave = claves[i];
+                const frases = frasesDe(analisis, clave);
+                if (frases.length < 3) continue;
+                const verdaderas = barajar(frases.slice(0, 4));
+                const falsa = frases[Math.min(4, frases.length - 1)];
+                const alterada = envolver(falsa, clave);
+                const sustituto = fueraDeNotas(analisis, 1)[0] || terminosLimpios[0];
+                if (!sustituto) continue;
+                const falsaTexto = alterada.indexOf('__T__') !== -1 ? alterada.replace('__T__', sustituto) : null;
+                if (!falsaTexto || falsaTexto === falsa) continue;
+                const tresOK = verdaderas.filter(function (f) { return f !== falsa; }).slice(0, 3);
+                if (tresOK.length < 3) continue;
+                const op = construirOpciones([falsaTexto], tresOK, { recortar: 140 });
+                candidatos.dificil.push({
+                    tipo: 'falsa',
+                    clave: clave,
+                    enunciado: '¿Cuál de estas afirmaciones es INCORRECTA?',
+                    opciones: op.opciones,
+                    correcta: op.correcta,
+                    varias: false,
+                    explicacion: 'La afirmación incorrecta es la que no está en tus apuntes. Las demás sí aparecen en el texto original.'
+                });
+            }
+
+            for (let i = 0; i < analisis.enumeraciones.length; i++) {
+                const en = analisis.enumeraciones[i];
+                const frasesTema = frasesDe(analisis, en.sujeto);
+                const distractoresTema = elegirDistractores(terminosLimpios, en.sujeto, 2, en.elementos.concat([en.sujeto]));
+                if (frasesTema.length >= 2 && distractoresTema.length === 2) {
+                    const op = construirOpciones(frasesTema.slice(0, 2), distractoresTema, { recortar: 140 });
+                    if (op.correcta.length === 2) {
+                        candidatos.dificil.push({
+                            tipo: 'falsa',
+                            clave: en.sujeto,
+                            enunciado: '¿Qué afirmaciones sobre «' + en.sujeto + '» aparecen en tus apuntes?',
+                            opciones: op.opciones,
+                            correcta: op.correcta,
+                            varias: true,
+                            explicacion: 'Tus apuntes: «' + recortar(en.oracion, 200) + '»'
+                        });
+                    }
+                }
+            }
+
+            return seleccionarPreguntas(tema, candidatos, tildes);
+        }
+
+        function indexDe(texto, trozo) {
+            const pos = texto.indexOf(trozo);
+            return pos;
+        }
+
+        function seleccionarPreguntas(tema, candidatos, pedidas) {
+            const elegidos = [];
+            const vistos = new Set();
+            const total = pedidas.facil + pedidas.medio + pedidas.dificil;
+            const orden = ['facil', 'medio', 'dificil'];
+
+            for (let n = 0; n < orden.length; n++) {
+                const nivel = orden[n];
+                const bolsa = barajar(candidatos[nivel].slice());
+                let tomados = 0;
+                for (let i = 0; i < bolsa.length && tomados < pedidas[nivel]; i++) {
+                    const cand = bolsa[i];
+                    const firma = nivel + '|' + cand.tipo + '|' + cand.enunciado;
+                    if (vistos.has(firma)) continue;
+                    vistos.add(firma);
+                    elegidos.push({
+                        id: uid('p'),
+                        temaId: tema.id,
+                        tipo: cand.tipo,
+                        enunciado: cand.enunciado,
+                        opciones: cand.opciones,
+                        correcta: cand.correcta,
+                        varias: !!cand.varias,
+                        dificultad: nivel,
+                        explicacion: cand.explicacion,
+                        clave: cand.clave,
+                        auto: true,
+                        creado: Date.now()
+                    });
+                    tomados++;
+                }
+            }
+
+            if (elegidos.length < total) {
+                const reserva = [];
+                for (let i = 0; i < candidatos.facil.length; i++) reserva.push([candidatos.facil[i], 'facil']);
+                for (let i = 0; i < candidatos.medio.length; i++) reserva.push([candidatos.medio[i], 'medio']);
+                for (let i = 0; i < candidatos.dificil.length; i++) reserva.push([candidatos.dificil[i], 'dificil']);
+                barajar(reserva);
+                for (let i = 0; i < reserva.length && elegidos.length < total; i++) {
+                    const cand = reserva[i][0];
+                    const firma = reserva[i][1] + '|' + cand.tipo + '|' + cand.enunciado;
+                    if (vistos.has(firma)) continue;
+                    vistos.add(firma);
+                    elegidos.push({
+                        id: uid('p'),
+                        temaId: tema.id,
+                        tipo: cand.tipo,
+                        enunciado: cand.enunciado,
+                        opciones: cand.opciones,
+                        correcta: cand.correcta,
+                        varias: !!cand.varias,
+                        dificultad: reserva[i][1],
+                        explicacion: cand.explicacion,
+                        clave: cand.clave,
+                        auto: true,
+                        creado: Date.now()
+                    });
+                }
+            }
+
+            barajar(elegidos);
+            return elegidos;
+        }
+
+        function generarTarjetas(tema, analisis) {
+            const tarjetas = [];
+            const defs = analisis.definiciones;
+            const terminos = analisis.terminos.slice(0, 16);
+            const usadas = new Set();
+
+            function agregar(frente, reverso, detalle, nivel, clave) {
+                const f = recortar(String(frente), 300);
+                const r = recortar(String(reverso), 400);
+                if (!f || !r) return;
+                const firma = (clave || '') + '|' + f;
+                if (usadas.has(firma)) return;
+                usadas.add(firma);
+                tarjetas.push({
+                    id: uid('c'),
+                    temaId: tema.id,
+                    frente: f,
+                    reverso: r,
+                    detalle: detalle ? recortar(String(detalle), 300) : '',
+                    dificultad: nivel,
+                    clave: clave || '',
+                    auto: true,
+                    creado: Date.now()
+                });
+            }
+
+            for (let i = 0; i < terminos.length; i++) {
+                const t = terminos[i].texto;
+                const conDef = defs.filter(function (d) {
+                    return new RegExp('\\b' + escRegex(t) + '\\b', 'i').test(d.sujeto);
+                });
+                if (conDef.length) {
+                    agregar(t, conDef[0].valor, marcaTermino(conDef[0].oracion, t), 'facil', t);
+                } else {
+                    const frases = frasesDe(analisis, t);
+                    if (frases.length) agregar(t, primera(frases), frases[0], 'facil', t);
+                }
+            }
+
+            for (let i = 0; i < terminos.length; i++) {
+                const t = terminos[i].texto;
+                const frases = frasesDe(analisis, t);
+                for (let j = 0; j < frases.length; j++) {
+                    const linea = hueco(frases[j], t);
+                    if (linea.indexOf('______') > 3) {
+                        agregar(linea, t, marcaTermino(frases[j], t), 'medio', t);
+                    }
+                }
+            }
+
+            for (let i = 0; i < defs.length; i++) {
+                const d = defs[i];
+                agregar(d.oracion, d.sujeto, 'Relación inversa: definition → concepto', 'dificil', d.sujeto);
+            }
+
+            for (let i = 0; i < analisis.enumeraciones.length; i++) {
+                const en = analisis.enumeraciones[i];
+                agregar('¿Qué elementos incluye «' + en.sujeto + '»?', en.elementos.join(', '), en.oracion, 'dificil', en.sujeto);
+                for (let j = 0; j < en.elementos.length; j++) {
+                    agregar(en.elementos[j], en.sujeto, en.oracion, 'medio', en.sujeto);
+                }
+            }
+
+            return tarjetas;
+        }
+
+        function estadoTarjeta(idTarjeta) {
+            if (!E.revision[idTarjeta]) {
+                E.revision[idTarjeta] = { repeticiones: 0, intervalo: 0, facilidad: 2.5, aciertos: 0, fallos: 0, proxima: 0, ultima: 0 };
+            }
+            const r = E.revision[idTarjeta];
+            if (typeof r.facilidad !== 'number') r.facilidad = 2.5;
+            if (typeof r.intervalo !== 'number') r.intervalo = 0;
+            if (typeof r.repeticiones !== 'number') r.repeticiones = 0;
+            if (typeof r.proxima !== 'number') r.proxima = 0;
+            return r;
+        }
+
+        function repasarTarjeta(idTarjeta, recordada) {
+            const r = estadoTarjeta(idTarjeta);
+            r.ultima = Date.now();
+            if (!recordada) {
+                r.fallos++;
+                r.repeticiones = 0;
+                r.intervalo = 0;
+                r.facilidad = Math.max(1.3, r.facilidad - 0.2);
+                r.proxima = Date.now() + 600000;
+            } else {
+                r.aciertos++;
+                r.repeticiones++;
+                if (r.repeticiones === 1) r.intervalo = 1;
+                else if (r.repeticiones === 2) r.intervalo = 3;
+                else r.intervalo = Math.round(r.intervalo * r.facilidad);
+                r.facilidad = Math.min(2.8, r.facilidad + 0.08);
+                r.proxima = Date.now() + r.intervalo * DIAS;
+            }
+        }
+
+        function detallesDe(idTema) {
+            const salida = [];
+            E.intentos.forEach(function (i) {
+                i.detalle.forEach(function (d) {
+                    if (idTema && (d.temaId || i.temaId) !== idTema) return;
+                    salida.push({ detalle: d, intento: i });
+                });
+            });
+            return salida;
+        }
+
+        function analisisTema(idTema) {
+            const respondidas = detallesDe(idTema).filter(function (x) { return x.detalle.respondida; });
+            const errores = respondidas.filter(function (x) { return !x.detalle.acierto; }).length;
+            const quizzes = E.intentos.filter(function (i) {
+                if (i.temaId === idTema) return true;
+                return i.detalle.some(function (d) { return (d.temaId || i.temaId) === idTema; });
+            }).length;
+
+            let porcentaje = null;
+            if (respondidas.length > 0) {
+                let sumaPesada = 0;
+                let pesos = 0;
+                E.intentos.forEach(function (indice, posicion) {
+                    const i = indice;
+                    const factor = Math.pow(0.85, posicion);
+                    let aciertosAqui = 0;
+                    let totalAqui = 0;
+                    i.detalle.forEach(function (d) {
+                        if (idTema && (d.temaId || i.temaId) !== idTema) return;
+                        if (!d.respondida) return;
+                        totalAqui++;
+                        if (d.acierto) aciertosAqui++;
+                    });
+                    if (!totalAqui) return;
+                    sumaPesada += factor * (aciertosAqui / totalAqui) * 100;
+                    pesos += factor;
+                });
+                const bruto = pesos ? sumaPesada / pesos : 0;
+                const confianza = respondidas.length / (respondidas.length + 6);
+                porcentaje = Math.round(bruto * (0.55 + 0.45 * confianza));
+            }
+
+            const vistas = {};
+            respondidas.forEach(function (x) { if (x.detalle.id) vistas[x.detalle.id] = true; });
+            const totalBanco = E.preguntas.filter(function (p) { return p.temaId === idTema; }).length;
+            const cobertura = totalBanco ? Math.min(1, Object.keys(vistas).length / totalBanco) : 0;
+            const ultima = respondidas.length ? respondidas[respondidas.length - 1].intento.fecha : null;
+
+            return {
+                quizzes: quizzes,
+                respondidas: respondidas.length,
+                errores: errores,
+                porcentaje: porcentaje,
+                cobertura: cobertura,
+                ultima: ultima
+            };
+        }
+
+        function analisisNivel(idTema, nivel) {
+            let aciertos = 0;
+            let total = 0;
+            detallesDe(idTema).forEach(function (x) {
+                const d = x.detalle;
+                if (!d.respondida) return;
+                if (nivel !== 'mixto' && d.dificultad !== nivel) return;
+                total++;
+                if (d.acierto) aciertos++;
+            });
+            if (!total) return { pct: null, total: 0, aciertos: 0 };
+            return { pct: Math.round((aciertos / total) * 100), total: total, aciertos: aciertos };
+        }
+
+        function nivelDebil(idTema) {
+            const niveles = ['facil', 'medio', 'dificil'];
+            let peor = 'facil';
+            let peorPct = Infinity;
+            for (let i = 0; i < niveles.length; i++) {
+                const a = analisisNivel(idTema, niveles[i]);
+                if (a.pct === null) continue;
+                if (a.pct < peorPct) {
+                    peorPct = a.pct;
+                    peor = niveles[i];
+                }
+            }
+            return peorPct === Infinity ? 'facil' : peor;
+        }
+
+        function temasPorUrgencia() {
+            const lista = E.temas.map(function (t) {
+                const a = analisisTema(t.id);
+                let urgencia = 0;
+                if (a.porcentaje === null) {
+                    urgencia = 55;
+                } else {
+                    urgencia = Math.max(0, Math.round(100 - a.porcentaje));
+                    if (a.quizzes <= 1) urgencia = Math.min(100, urgencia + 12);
+                }
+                return { tema: t, analisis: a, nivel: nivelDebil(t.id), urgencia: urgencia };
+            });
+            lista.sort(function (a, b) {
+                if (b.urgencia !== a.urgencia) return b.urgencia - a.urgencia;
+                return (a.analisis.porcentaje === null ? -1 : a.analisis.porcentaje) - (b.analisis.porcentaje === null ? -1 : b.analisis.porcentaje);
+            });
+            return lista;
+        }
+
+        function conceptosDebiles(limite) {
+            const mapa = {};
+            E.intentos.forEach(function (i) {
+                i.detalle.forEach(function (d) {
+                    if (!d.respondida || !d.clave) return;
+                    const tid = d.temaId || i.temaId;
+                    if (!mapa[d.clave]) {
+                        const t = temaPorId(tid);
+                        mapa[d.clave] = { clave: d.clave, tema: t ? t.nombre : 'Sin tema', temaId: tid, ok: 0, mal: 0 };
+                    }
+                    if (d.acierto) mapa[d.clave].ok++;
+                    else mapa[d.clave].mal++;
+                });
+            });
+            const lista = Object.keys(mapa).map(function (k) {
+                const item = mapa[k];
+                const total = item.ok + item.mal;
+                item.total = total;
+                item.pct = Math.round((item.ok / total) * 100);
+                return item;
+            });
+            lista.sort(function (a, b) {
+                if (b.mal !== a.mal) return b.mal - a.mal;
+                return a.pct - b.pct;
+            });
+            return lista.slice(0, limite || 8);
+        }
+
+        function preguntasDeTema(idTema) {
+            return E.preguntas.filter(function (p) { return p.temaId === idTema; });
+        }
+
+        function tarjetasDeTema(idTema) {
+            return E.tarjetas.filter(function (c) { return c.temaId === idTema; });
+        }
+
+        function tarjetasPendientes(idTema) {
+            const ahora = Date.now();
+            return E.tarjetas.filter(function (c) {
+                if (idTema && c.temaId !== idTema) return false;
+                const r = estadoTarjeta(c.id);
+                return !r.proxima || r.proxima <= ahora;
+            });
+        }
+
+        function estadisticasGlobal(idTema) {
+            const erroresPregunta = {};
+            const erroresClave = {};
+            const respondidas = {};
+            detallesDe(idTema).forEach(function (x) {
+                const d = x.detalle;
+                if (!d.respondida) return;
+                respondidas[d.id] = (respondidas[d.id] || 0) + 1;
+                if (!d.acierto) {
+                    erroresPregunta[d.id] = (erroresPregunta[d.id] || 0) + 1;
+                    if (d.clave) erroresClave[d.clave] = (erroresClave[d.clave] || 0) + 1;
+                }
+            });
+            return {
+                erroresPregunta: erroresPregunta,
+                erroresClave: erroresClave,
+                respondidas: respondidas,
+                nivelDebil: idTema ? nivelDebil(idTema) : 'facil',
+                porcentaje: idTema ? analisisTema(idTema).porcentaje : globalPorcentaje()
+            };
+        }
+
+        function globalPorcentaje() {
+            let ok = 0;
+            let total = 0;
+            E.intentos.forEach(function (i) {
+                i.detalle.forEach(function (d) {
+                    if (!d.respondida) return;
+                    total++;
+                    if (d.acierto) ok++;
+                });
+            });
+            if (!total) return null;
+            return Math.round((ok / total) * 100);
+        }
+
+        function prioridad(p, stats) {
+            let s = 0;
+            s += (stats.erroresPregunta[p.id] || 0) * 10;
+            s += (stats.erroresClave[p.clave] || 0) * 4;
+            if (!stats.respondidas[p.id]) s += 3;
+            if (p.dificultad === stats.nivelDebil) s += 2;
+            if (p.dificultad === 'dificil' && stats.porcentaje !== null && stats.porcentaje < 70) s += 1;
+            return s;
+        }
+
+        function construirPool(temaId, modo, nivel, cantidad) {
+            let pool;
+            let stats;
+            if (modo === 'mixto') {
+                pool = E.preguntas.slice();
+                if (nivel === 'facil' || nivel === 'medio' || nivel === 'dificil') {
+                    pool = pool.filter(function (p) { return p.dificultad === nivel; });
+                }
+                stats = estadisticasGlobal(null);
+                const urgencia = {};
+                temasPorUrgencia().forEach(function (x) { urgencia[x.tema.id] = x.urgencia; });
+                const ordenadas = pool.map(function (p) {
+                    return { p: p, s: prioridad(p, stats) + (urgencia[p.temaId] || 0) / 10 };
+                });
+                ordenadas.sort(function (a, b) { return b.s - a.s; });
+                return barajar(ordenadas.slice(0, cantidad).map(function (x) { return x.p; }));
+            }
+            pool = preguntasDeTema(temaId);
+            stats = estadisticasGlobal(temaId);
+            if (nivel === 'facil' || nivel === 'medio' || nivel === 'dificil') {
+                pool = pool.filter(function (p) { return p.dificultad === nivel; });
+            }
+            if (modo === 'inteligente' && nivel === 'mixto') {
+                const ordenadas = pool.map(function (p) { return { p: p, s: prioridad(p, stats) }; });
+                ordenadas.sort(function (a, b) { return b.s - a.s; });
+                return barajar(ordenadas.slice(0, cantidad).map(function (x) { return x.p; }));
+            }
+            if (modo === 'inteligente') {
+                pool = pool.filter(function (p) { return p.dificultad === stats.nivelDebil || prioridad(p, stats) >= 3; });
+            }
+            if (nivel === 'mixto') {
+                const reparto = { facil: Math.ceil(cantidad * 0.3), medio: Math.ceil(cantidad * 0.4), dificil: Math.ceil(cantidad * 0.3) };
+                const elegidas = [];
+                ['facil', 'medio', 'dificil'].forEach(function (n) {
+                    const bolsa = barajar(pool.filter(function (p) { return p.dificultad === n; }));
+                    for (let i = 0; i < bolsa.length && elegidas.length < reparto.facil + reparto.medio + reparto.dificil; i++) {
+                        if (elegidas.length >= cantidad) break;
+                        elegidas.push(bolsa[i]);
+                    }
+                });
+                barajar(pool);
+                for (let i = 0; i < pool.length && elegidas.length < cantidad; i++) {
+                    if (elegidas.indexOf(pool[i]) === -1) elegidas.push(pool[i]);
+                }
+                return elegidas.slice(0, cantidad);
+            }
+            barajar(pool);
+            return pool.slice(0, cantidad);
+        }
+
+        let Q = null;
+
+        function empezarQuiz() {
+            const temaId = $('#quiz-tema').value;
+            let modo = $('#quiz-modo').value;
+            const nivelSel = $('#quiz-nivel').value;
+            const cantidad = parseInt($('#quiz-cantidad').value, 10) || 10;
+
+            let nivel = nivelSel;
+            let idTema = temaId;
+            if (nivelSel === 'debil') {
+                nivel = nivelDebil(temaId);
+                toast('Tu nivel más débil en este tema es «' + nivelTexto(nivel) + '».', 'bien');
+            }
+
+            if (modo !== 'mixto' && idTema === '__mixto__') {
+                modo = 'mixto';
+            }
+
+            const lista = construirPool(idTema, modo, nivel, cantidad);
+            if (!lista.length) {
+                toast('No hay preguntas disponibles con esos filtros. Genera más contenido desde el tema.', 'mal');
+                return;
+            }
+
+            Q = {
+                preguntas: lista,
+                indice: 0,
+                seleccion: [],
+                respondida: false,
+                aciertos: 0,
+                puntos: 0,
+                detalle: [],
+                inicio: Date.now(),
+                inicioPregunta: Date.now(),
+                modo: modo,
+                nivel: nivel,
+                temaId: modo === 'mixto' ? null : idTema,
+                titulo: modo === 'mixto' ? 'Quiz mixto' : nombreTema(idTema)
+            };
+
+            $('#quiz-config').classList.add('oculto');
+            $('#quiz-resultado').classList.add('oculto');
+            $('#quiz-juego').classList.remove('oculto');
+            mostrarPregunta();
+        }
+
+        function mostrarPregunta() {
+            const p = Q.preguntas[Q.indice];
+            Q.seleccion = [];
+            Q.respondida = false;
+            Q.inicioPregunta = Date.now();
+
+            $('#quiz-pos').textContent = 'Pregunta ' + (Q.indice + 1) + ' de ' + Q.preguntas.length;
+            $('#quiz-marcador').textContent = 'Puntos: ' + Q.puntos;
+            $('#quiz-barra').style.width = ((Q.indice / Q.preguntas.length) * 100) + '%';
+            $('#quiz-marca-tiempo').innerHTML = '<span class="etiqueta ' + p.dificultad + '">' + nivelTexto(p.dificultad) + '</span> <span class="etiqueta tipo">' + esc(tipoTexto(p.tipo)) + '</span>' + (p.varias ? ' <span class="etiqueta tipo">varias respuestas</span>' : '');
+
+            $('#quiz-enunciado').textContent = p.enunciado;
+            $('#quiz-explicacion').classList.add('oculto');
+            $('#quiz-siguiente').classList.add('oculto');
+            $('#quiz-saltar').classList.toggle('oculto', Q.indice === Q.preguntas.length - 1);
+            $('#quiz-comprobar').classList.toggle('oculto', !p.varias);
+
+            const caja = $('#quiz-opciones');
+            caja.innerHTML = '';
+            for (let i = 0; i < p.opciones.length; i++) {
+                const btn = document.createElement('button');
+                btn.className = 'opcion';
+                btn.innerHTML = '<span class="letra">' + LETRAS[i] + '</span><span>' + esc(p.opciones[i]) + '</span>';
+                btn.onclick = function () { elegirOpcion(i); };
+                caja.appendChild(btn);
+            }
+            if (p.varias) {
+                toast('Esta pregunta tiene varias respuestas correctas: márcalas y pulsa Comprobar.');
+            }
+        }
+
+        function tipoTexto(tipo) {
+            const mapa = {
+                'hueco': 'completar',
+                'significado': 'significado',
+                'caracteristica': 'aplicar',
+                'verdadero-falso': 'verdadero o falso',
+                'ajena': 'descartar',
+                'inversa': 'recuerdo inverso',
+                'relaciones': 'relaciones',
+                'falsa': 'detectar el error',
+                'manual': 'escrita a mano'
+            };
+            return mapa[tipo] || tipo;
+        }
+
+        function elegirOpcion(indice) {
+            if (!Q || Q.respondida) return;
+            const p = Q.preguntas[Q.indice];
+            if (p.varias) {
+                const pos = Q.seleccion.indexOf(indice);
+                if (pos === -1) Q.seleccion.push(indice);
+                else Q.seleccion.splice(pos, 1);
+                const botones = $$('#quiz-opciones .opcion');
+                for (let i = 0; i < botones.length; i++) {
+                    botones[i].style.borderColor = Q.seleccion.indexOf(i) !== -1 ? '#818cf8' : 'transparent';
+                    botones[i].style.background = Q.seleccion.indexOf(i) !== -1 ? 'rgba(99,102,241,.28)' : '';
+                }
+            } else {
+                calificar([indice]);
+            }
+        }
+
+        function comprobarMultiple() {
+            if (!Q || Q.respondida) return;
+            if (!Q.seleccion.length) {
+                toast('Selecciona al menos una opción antes de comprobar.', 'mal');
+                return;
+            }
+            calificar(Q.seleccion.slice());
+        }
+
+        function calificar(elegidas) {
+            const p = Q.preguntas[Q.indice];
+            Q.respondida = true;
+            const acierta = esCorrecta(p, elegidas);
+            if (acierta) {
+                Q.aciertos++;
+                Q.puntos += PUNTOS[p.dificultad] || 10;
+            }
+            Q.detalle.push({
+                id: p.id,
+                clave: p.clave,
+                temaId: p.temaId,
+                dificultad: p.dificultad,
+                acierto: acierta,
+                omitida: false,
+                respondida: true,
+                enunciado: p.enunciado,
+                tipo: p.tipo,
+                opciones: p.opciones,
+                correcta: p.correcta,
+                elegidas: elegidas.slice(),
+                varias: p.varias,
+                explicacion: p.explicacion
+            });
+
+            const botones = $$('#quiz-opciones .opcion');
+            for (let i = 0; i < botones.length; i++) {
+                botones[i].classList.add('bloqueada');
+                botones[i].style.borderColor = '';
+                botones[i].style.background = '';
+                if (p.correcta.indexOf(i) !== -1) botones[i].classList.add('correcta');
+                else if (elegidas.indexOf(i) !== -1) botones[i].classList.add('incorrecta');
+            }
+
+            const segundos = Math.round((Date.now() - Q.inicioPregunta) / 1000);
+            const caja = $('#quiz-explicacion');
+            caja.innerHTML = '<b>' + (acierta ? '¡Correcto!' : 'Incorrecto.') + '</b> (' + segundos + ' s)' +
+                (p.explicacion ? '<br>' + esc(p.explicacion) : '');
+            caja.classList.remove('oculto');
+            caja.style.borderLeftColor = acierta ? 'var(--facil)' : 'var(--dificil)';
+
+            $('#quiz-marcador').textContent = 'Puntos: ' + Q.puntos;
+            $('#quiz-barra').style.width = (((Q.indice + 1) / Q.preguntas.length) * 100) + '%';
+            $('#quiz-comprobar').classList.add('oculto');
+            $('#quiz-saltar').classList.add('oculto');
+            $('#quiz-siguiente').classList.remove('oculto');
+            $('#quiz-siguiente').textContent = Q.indice === Q.preguntas.length - 1 ? 'Ver resultado →' : 'Siguiente →';
+        }
+
+        function esCorrecta(p, elegidas) {
+            if (!p.varias) return elegidas.length === 1 && p.correcta.indexOf(elegidas[0]) !== -1;
+            if (elegidas.length !== p.correcta.length) return false;
+            const copia = p.correcta.slice();
+            for (let i = 0; i < copia.length; i++) {
+                const pos = elegidas.indexOf(copia[i]);
+                if (pos === -1) return false;
+                elegidas.splice(pos, 1);
+            }
+            return elegidas.length === 0;
+        }
+
+        function saltarPregunta() {
+            if (!Q || Q.respondida) return;
+            const p = Q.preguntas[Q.indice];
+            Q.detalle.push({
+                id: p.id, clave: p.clave, temaId: p.temaId, dificultad: p.dificultad,
+                acierto: false, omitida: true, respondida: false
+            });
+            siguientePregunta();
+        }
+
+        function siguientePregunta() {
+            if (!Q) return;
+            if (Q.indice >= Q.preguntas.length - 1) {
+                terminarQuiz();
+                return;
+            }
+            Q.indice++;
+            mostrarPregunta();
+        }
+
+        function terminarQuiz() {
+            const omitidas = Q.detalle.filter(function (d) { return d.omitida; }).length;
+            const total = Q.preguntas.length;
+            const pct = Math.round((Q.aciertos / total) * 100);
+
+            E.intentos.push({
+                id: uid('i'),
+                temaId: Q.temaId,
+                titulo: Q.titulo,
+                modo: Q.modo,
+                fecha: Date.now(),
+                duracion: Date.now() - Q.inicio,
+                puntos: Q.puntos,
+                total: total,
+                aciertos: Q.aciertos,
+                nivel: Q.nivel,
+                detalle: Q.detalle.map(function (d) {
+                    return {
+                        id: d.id, clave: d.clave, temaId: d.temaId || Q.temaId, dificultad: d.dificultad,
+                        acierto: d.acierto, omitida: d.omitida, respondida: d.respondida
+                    };
+                })
+            });
+            guardar();
+
+            $('#quiz-juego').classList.add('oculto');
+            $('#quiz-config').classList.remove('oculto');
+            $('#quiz-resultado').classList.remove('oculto');
+            $('#resultado-num').textContent = pct + '%';
+            $('#resultado-den').textContent = Q.aciertos + ' de ' + total;
+
+            let mensaje;
+            if (omitidas) mensaje = 'Dejaste ' + omitidas + ' sin responder. Las omitidas no cuentan como acierto.';
+            else if (pct === 100) mensaje = '¡Perfecto! Dominaste este contenido. Puedes subir a un nivel más difícil.';
+            else if (pct >= 80) mensagem = '¡Excelente! Casi todo controlado. Repasa los errores que quedan.';
+            else if (pct >= 60) mensaje = 'Buen trabajo. Estás por encima del aprobado: reinforce los conceptos que fallaste.';
+            else if (pct >= 40) mensaje = 'Vas por buen camino, pero conviene repasar: vuelve a leer tus apuntes y prueba con las flashcards.';
+            else mensaje = 'Este tema necesita más práctica. Empieza por el modo fácil y usa las flashcards.';
+
+            $('#resultado-msg').textContent = mensaje;
+            $('#resultado-titulo').textContent = pct >= 80 ? '¡Quiz terminado, muy bien!' : '¡Quiz terminado!';
+
+            const caja = $('#resultado-revision');
+            caja.innerHTML = '';
+            Q.detalle.forEach(function (d, indice) {
+                const item = document.createElement('div');
+                item.className = 'lista-item';
+                item.style.borderLeftColor = d.respondida ? (d.acierto ? 'var(--facil)' : 'var(--dificil)') : 'var(--tenue)';
+                if (!d.respondida) {
+                    item.innerHTML = '<div class="cabeza"><span class="etiqueta ' + d.dificultad + '">' + nivelTexto(d.dificultad) + '</span>' +
+                        '<span class="etiqueta tipo">omitida</span></div>' +
+                        '<div class="enunciado">' + (indice + 1) + '. ' + esc(d.enunciado) + '</div>';
+                } else {
+                    let opciones = '';
+                    d.opciones.forEach(function (texto, i) {
+                        let clase = '';
+                        if (d.correcta.indexOf(i) !== -1) clase = 'bien';
+                        else if (d.elegidas.indexOf(i) !== -1) clase = 'mal';
+                        opciones += '<span class="op-mini ' + clase + '">' + LETRAS[i] + '. ' + esc(recortar(texto, 90)) + '</span>';
+                    });
+                    item.innerHTML = '<div class="cabeza"><span class="etiqueta ' + d.dificultad + '">' + nivelTexto(d.dificultad) + '</span>' +
+                        '<span class="etiqueta tipo">' + (d.acierto ? 'acertaste' : 'fallaste') + (d.clave ? ' · ' + esc(d.clave) : '') + '</span></div>' +
+                        '<div class="enunciado">' + (indice + 1) + '. ' + esc(d.enunciado) + '</div>' +
+                        '<div class="opciones-mini">' + opciones + '</div>' +
+                        (d.explicacion ? '<div class="explicacion">' + esc(d.explicacion) + '</div>' : '');
+                }
+                caja.appendChild(item);
+            });
+
+            refrescar();
+            toast('Resultado guardado. Revisa tu progreso para saber qué reforzar.', 'bien');
+        }
+
+        let F = null;
+
+        function iniciarFlashcards() {
+            const temaId = $('#flash-tema').value;
+            let cola = tarjetasPendientes(temaId);
+            if (cola.length < 5) {
+                cola = E.tarjetas.filter(function (c) {
+                    return (!temaId || c.temaId === temaId);
+                });
+            }
+            if (!cola.length) {
+                toast('No hay tarjetas todavía. Genera contenido desde un tema.', 'mal');
+                return;
+            }
+            cola.sort(function (a, b) { return (estadoTarjeta(a.id).proxima || 0) - (estadoTarjeta(b.id).proxima || 0); });
+            F = { cola: cola.slice(0, 25), indice: 0, aciertos: 0, fallos: 0, volteada: false };
+            $('#panel-flash').classList.remove('oculto');
+            pintarFlashcard();
+            refrescarControlesFlash();
+        }
+
+        function pintarFlashcard() {
+            if (!F) return;
+            const c = F.cola[F.indice];
+            const r = estadoTarjeta(c.id);
+            const info = r.proxima
+                ? (r.proxima <= Date.now() ? 'pendiente de repaso' : 'próximo repaso: ' + fechaLarga(r.proxima))
+                : 'sin repasar todavía';
+            $('#flash-tarjeta').innerHTML =
+                '<div class="flash" id="flash-caja" onclick="girarFlashcard()">' +
+                '<div class="cara frente"><span class="etiqueta ' + c.dificultad + '">' + nivelTexto(c.dificultad) + '</span>' +
+                '<div class="texto">' + esc(c.frente) + '</div>' +
+                '<div class="pista">Pulsa para ver la respuesta · ' + esc(info) + '</div></div>' +
+                '<div class="cara reverso"><span class="etiqueta tipo">respuesta</span>' +
+                '<div class="texto">' + esc(c.reverso) + '</div>' +
+                (c.detalle ? '<div class="pista">' + esc(recortar(c.detalle, 150)) + '</div>' : '') + '</div></div>';
+            $('#pasos-flash').innerHTML = barraPasos();
+        }
+
+        function barraPasos() {
+            if (!F) return '';
+            const inicio = F.indice / F.cola.length * 100;
+            const fin = (F.indice + 1) / F.cola.length * 100;
+            return '<div style="flex:1;min-width:180px"><div class="barra"><div style="width:' + fin + '%;background:linear-gradient(90deg,#818cf8,#67e8f9)"></div></div>' +
+                '<div style="font-size:.78rem;color:var(--tenue);margin-top:6px">Tarjeta ' + (F.indice + 1) + ' de ' + F.cola.length +
+                ' · ' + F.aciertos + ' correctas y ' + F.fallos + ' falladas</div></div>';
+        }
+
+        function refrescarControlesFlash() {
+            if (!F) return;
+            $('#flash-girar').disabled = F.volteada;
+            $('#flash-no').disabled = !F.volteada;
+            $('#flash-si').disabled = !F.volteada;
+            $('#pasos-flash').innerHTML = barraPasos();
+        }
+
+        function girarFlashcard() {
+            if (!F) return;
+            F.volteada = !F.volteada;
+            const caja = $('#flash-caja');
+            if (caja) caja.classList.toggle('volteada', F.volteada);
+            refrescarControlesFlash();
+        }
+
+        function responderFlashcard(recordada) {
+            if (!F || !F.volteada) return;
+            const c = F.cola[F.indice];
+            repasarTarjeta(c.id, recordada);
+            if (recordada) F.aciertos++;
+            else F.fallos++;
+            guardar();
+            F.volteada = false;
+            F.indice++;
+            if (F.indice >= F.cola.length) {
+                const total = F.aciertos + F.fallos;
+                toast('Sesión terminada: ' + F.aciertos + ' de ' + total + ' correctas. Las falladas volverán a aparecer pronto.', 'bien');
+                F = null;
+                $('#panel-flash').classList.add('oculto');
+                $('#flash-tarjeta').innerHTML = '';
+                refrescar();
+                irA('tarjetas');
+                return;
+            }
+            pintarFlashcard();
+            refrescarControlesFlash();
+        }
+
+        function terminarFlashcards() {
+            F = null;
+            $('#panel-flash').classList.add('oculto');
+            $('#flash-tarjeta').innerHTML = '';
+            refrescar();
+        }
+
+        function renderTarjetas() {
+            const ahora = Date.now();
+            const pendientes = tarjetasPendientes();
+            const caja = $('#lista-tarjetas');
+            if (!E.tarjetas.length) {
+                caja.innerHTML = vacio('🃏', 'Todavía no hay tarjetas. Crea un tema y el asistente generará tarjetas automáticamente.');
+                return;
+            }
+            let html = '<div class="aviso" style="margin-bottom:16px">Tienes <b>' + pendientes.length + '</b> ' +
+                plural(pendientes.length, 'tarjeta pendiente', 'tarjetas pendientes') + ' de repaso de un total de <b>' +
+                E.tarjetas.length + '</b>.</div>';
+
+            E.temas.forEach(function (t) {
+                const propias = tarjetasDeTema(t.id);
+                if (!propias.length) return;
+                const suyas = propias.filter(function (c) {
+                    const r = estadoTarjeta(c.id);
+                    return !r.proxima || r.proxima <= ahora;
+                }).length;
+                const maestro = propias.filter(function (c) {
+                    const r = estadoTarjeta(c.id);
+                    return r.repeticiones >= 3 && r.proxima > ahora;
+                }).length;
+                html += '<div class="fila-nivel" style="padding:10px 0;border-bottom:1px solid var(--borde)">' +
+                    '<span class="nombre">' + esc(t.nombre) + '</span>' +
+                    '<span class="barra"><div style="width:' + Math.round(((propias.length - suyas) / propias.length) * 100) + '%;background:var(--facil)"></div></span>' +
+                    '<span class="val">' + propias.length + ' tarjetas · ' + suyas + ' por repasar · ' + maestro + ' dominadas</span></div>';
+            });
+
+            const muestra = barajar(E.tarjetas.slice()).slice(0, 8);
+            html += '<h3 style="font-size:1rem;margin:22px 0 12px">Vista previa</h3>';
+            muestra.forEach(function (c) {
+                const r = estadoTarjeta(c.id);
+                html += '<div class="lista-item" style="border-left-color:' + colorNivel(c.dificultad) + '">' +
+                    '<div class="cabeza"><span class="etiqueta ' + c.dificultad + '">' + nivelTexto(c.dificultad) + '</span>' +
+                    '<span style="font-size:.78rem;color:var(--tenue)">' + esc(nombreTema(c.temaId)) +
+                    (r.repeticiones ? ' · repasada ' + r.repeticiones + ' ' + plural(r.repeticiones, 'vez', 'veces') : '') + '</span></div>' +
+                    '<div class="enunciado">' + esc(c.frente) + '</div>' +
+                    '<div class="opciones-mini"><span class="op-mini bien">' + esc(recortar(c.reverso, 160)) + '</span></div></div>';
+            });
+
+            caja.innerHTML = html;
+        }
+
+        function colorNivel(nivel) {
+            if (nivel === 'facil') return 'var(--facil)';
+            if (nivel === 'medio') return 'var(--medio)';
+            return 'var(--dificil)';
+        }
+
+        function vacio(icono, texto) {
+            return '<div class="vacio"><div class="icono">' + icono + '</div><p>' + esc(texto) + '</p></div>';
+        }
+
+        function renderPreguntas() {
+            const temaId = $('#filtro-tema').value;
+            const nivel = $('#filtro-nivel').value;
+            let lista = E.preguntas.slice();
+            if (temaId === '__mixto__') lista = lista;
+            else if (temaId) lista = lista.filter(function (p) { return p.temaId === temaId; });
+            if (nivel) lista = lista.filter(function (p) { return p.dificultad === nivel; });
+
+            $('#contador-preguntas').textContent = 'Preguntas (' + lista.length + ')';
+            const caja = $('#lista-preguntas');
+            if (!lista.length) {
+                caja.innerHTML = vacio('❓', 'No hay preguntas con esos filtros. Genera contenido desde un tema o añade una a mano.');
+                return;
+            }
+            lista.sort(function (a, b) { return b.creado - a.creado; });
+            let html = '';
+            lista.slice(0, 60).forEach(function (p) {
+                let opciones = '';
+                p.opciones.forEach(function (texto, i) {
+                    opciones += '<span class="op-mini' + (p.correcta.indexOf(i) !== -1 ? ' bien' : '') + '">' +
+                        LETRAS[i] + '. ' + esc(recortar(texto, 70)) + '</span>';
+                });
+                html += '<div class="lista-item" style="border-left-color:' + colorNivel(p.dificultad) + '">' +
+                    '<div class="cabeza"><span class="etiqueta ' + p.dificultad + '">' + nivelTexto(p.dificultad) + '</span>' +
+                    '<span class="etiqueta tipo">' + esc(tipoTexto(p.tipo)) + '</span>' +
+                    '<button class="btn peligro pequeno" onclick="borrarPregunta(\'' + p.id + '\')">Eliminar</button></div>' +
+                    '<div class="enunciado">' + esc(p.enunciado) + '</div>' +
+                    '<div class="opciones-mini">' + opciones + '</div></div>';
+            });
+            if (lista.length > 60) {
+                html += '<p style="color:var(--tenue);font-size:.85rem;margin-top:10px">Mostrando las 60 más recientes de ' + lista.length + '.</p>';
+            }
+            caja.innerHTML = html;
+        }
+
+        function abrirFormularioManual() {
+            if (!E.temas.length) {
+                toast('Primero crea un tema.', 'mal');
+                irA('temas');
+                return;
+            }
+            $('#panel-manual').classList.remove('oculto');
+            $('#man-enunciado').focus();
+        }
+
+        function cerrarFormularioManual() {
+            $('#panel-manual').classList.add('oculto');
+        }
+
+        function guardarPreguntaManual() {
+            const enunciado = $('#man-enunciado').value.trim();
+            const opciones = [$('#man-a').value.trim(), $('#man-b').value.trim(), $('#man-c').value.trim(), $('#man-d').value.trim()];
+            if (!enunciado) {
+                toast('Escribe el enunciado de la pregunta.', 'mal');
+                return;
+            }
+            if (!opciones[0] || !opciones[1]) {
+                toast('Necesitas al menos dos opciones con texto.', 'mal');
+                return;
+            }
+            const indice = parseInt($('#man-correcta').value, 10) || 0;
+            if (!opciones[indice]) {
+                toast('La opción marcada como correcta está vacía.', 'mal');
+                return;
+            }
+            E.preguntas.push({
+                id: uid('p'),
+                temaId: $('#man-tema').value,
+                tipo: 'manual',
+                enunciado: enunciado,
+                opciones: opciones.filter(function (o) { return o; }),
+                correcta: [indice],
+                varias: false,
+                dificultad: $('#man-nivel').value,
+                explicacion: $('#man-explicacion').value.trim(),
+                clave: '',
+                auto: false,
+                creado: Date.now()
+            });
+            guardar();
+            cerrarFormularioManual();
+            ['man-enunciado', 'man-a', 'man-b', 'man-c', 'man-d', 'man-explicacion'].forEach(function (id) { $('#' + id).value = ''; });
+            refrescar();
+            toast('Pregunta guardada.', 'bien');
+        }
+
+        function borrarPregunta(id) {
+            E.preguntas = E.preguntas.filter(function (p) { return p.id !== id; });
+            guardar();
+            refrescar();
+        }
+
+        function renderTemas() {
+            const caja = $('#lista-temas');
+            if (!E.temas.length) {
+                caja.innerHTML = vacio('📚', 'No tienes temas todavía. Escribe uno arriba o pulsa «Probar con ejemplo».');
+                return;
+            }
+            let html = '';
+            temasPorUrgencia().forEach(function (item) {
+                const t = item.tema;
+                const a = item.analisis;
+                const est = estadoDominio(a.porcentaje);
+                const preguntas = preguntasDeTema(t.id).length;
+                const tarjetas = tarjetasDeTema(t.id).length;
+                const detalle = [
+                    preguntas + ' ' + plural(preguntas, 'pregunta', 'preguntas'),
+                    tarjetas + ' ' + plural(tarjetas, 'tarjeta', 'tarjetas')
+                ];
+                if (a.quizzes) {
+                    detalle.push(a.quizzes + ' ' + plural(a.quizzes, 'quiz', 'quizzes') + ' · ' + a.respondidas + ' respondidas');
+                } else {
+                    detalle.push('sin quizzes todavía');
+                }
+                html += '<div class="tarjeta-tema">' +
+                    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
+                    '<h3>' + esc(t.nombre) + '</h3>' +
+                    '<span class="estado ' + est.clase + '">' + est.texto + '</span></div>' +
+                    '<div class="barra"><div style="width:' + (a.porcentaje === null ? 0 : a.porcentaje) + '%;background:' + nivelColor(a.porcentaje) + '"></div></div>' +
+                    '<div class="meta">' + (a.porcentaje === null ? 'Sin datos de rendimiento' : 'Dominio ' + a.porcentaje + '%') +
+                    ' · punto más débil: <b>' + nivelTexto(item.nivel) + '</b><br>' + esc(detalle.join(' · ')) + '</div>' +
+                    '<div class="acciones">' +
+                    '<button class="btn pequeno" onclick="irA(\'quiz\')">Quiz</button>' +
+                    '<button class="btn sec pequeno" onclick="irA(\'tarjetas\')">Tarjetas</button>' +
+                    '<button class="btn sec pequeno" onclick="regenerarTema(\'' + t.id + '\')">Regenerar</button>' +
+                    '<button class="btn sec pequeno" onclick="editarNotas(\'' + t.id + '\')">Editar apuntes</button>' +
+                    '<button class="btn peligro pequeno" onclick="borrarTema(\'' + t.id + '\')">Borrar</button>' +
+                    '</div></div>';
+            });
+            caja.innerHTML = html;
+        }
+
+        function renderCinta() {
+            const pendientes = tarjetasPendientes().length;
+            const global = globalPorcentaje();
+            $('#cinta').innerHTML =
+                '<div class="pastilla">Temas <b>' + E.temas.length + '</b></div>' +
+                '<div class="pastilla">Preguntas <b>' + E.preguntas.length + '</b></div>' +
+                '<div class="pastilla">Tarjetas <b>' + E.tarjetas.length + '</b></div>' +
+                '<div class="pastilla">Quizzes <b>' + E.intentos.length + '</b></div>' +
+                '<div class="pastilla">Aciertos <b>' + (global === null ? '—' : global + '%') + '</b></div>' +
+                '<div class="pastilla">Tarjetas por repasar <b>' + pendientes + '</b></div>';
+        }
+
+        function llenarSelectores() {
+            const ids = ['filtro-tema', 'man-tema', 'flash-tema', 'quiz-tema'];
+            ids.forEach(function (id) {
+                const actual = $('#' + id).value;
+                let html = '';
+                if (id === 'filtro-tema' || id === 'quiz-tema') {
+                    html += '<option value="__mixto__">Todos los temas</option>';
+                }
+                E.temas.forEach(function (t) {
+                    html += '<option value="' + t.id + '">' + esc(t.nombre) + '</option>';
+                });
+                $('#' + id).innerHTML = html || '<option value="">Sin temas</option>';
+                if (actual && $('#' + id).querySelector('option[value="' + actual + '"]')) $('#' + id).value = actual;
+            });
+        }
+
+        function refrescar() {
+            llenarSelectores();
+            renderCinta();
+            renderTemas();
+            renderPreguntas();
+            renderTarjetas();
+            renderProgreso();
+        }
+
+        function renderProgreso() {
+            renderNiveles();
+            renderRecomendaciones();
+            renderConceptos();
+            renderHistorial();
+        }
+
+        function renderNiveles() {
+            const caja = $('#panel-niveles');
+            if (!E.temas.length) {
+                caja.innerHTML = vacio('📈', 'Crea un tema y haz un quiz para ver aquí tu nivel.');
+                return;
+            }
+            let html = '';
+            E.temas.forEach(function (t) {
+                const a = analisisTema(t.id);
+                const est = estadoDominio(a.porcentaje);
+                html += '<div style="margin-bottom:22px"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' +
+                    '<b>' + esc(t.nombre) + '</b><span class="estado ' + est.clase + '">' + est.texto + '</span></div>' +
+                    '<div class="barra" style="margin-bottom:12px"><div style="width:' + (a.porcentaje === null ? 0 : a.porcentaje) + '%;background:' + nivelColor(a.porcentaje) + '"></div></div>' +
+                    '<div class="rejilla-niveles">';
+                ['facil', 'medio', 'dificil'].forEach(function (nivel) {
+                    const d = analisisNivel(t.id, nivel);
+                    html += '<div class="fila-nivel">' +
+                        '<span class="nombre" style="color:' + colorNivel(nivel) + '">' + nivelTexto(nivel) + '</span>' +
+                        '<span class="barra"><div style="width:' + (d.pct === null ? 0 : d.pct) + '%;background:' + nivelColor(d.pct) + '"></div></span>' +
+                        '<span class="val">' + (d.pct === null ? 'sin datos' : d.pct + '% · ' + d.aciertos + '/' + d.total) + '</span></div>';
+                });
+                html += '</div></div>';
+            });
+            caja.innerHTML = html;
+        }
+
+        function renderRecomendaciones() {
+            const caja = $('#panel-recomendaciones');
+            const urgentes = temasPorUrgencia().filter(function (x) { return x.urgencia >= 30; }).slice(0, 4);
+            if (!urgentes.length) {
+                caja.innerHTML = vacio('🎉', 'Ningún tema necesita práctica urgente. ¡Buen trabajo!');
+                return;
+            }
+            let html = '';
+            urgentes.forEach(function (item) {
+                const t = item.tema;
+                const a = item.analisis;
+                const d = analisisNivel(t.id, item.nivel);
+                let texto;
+                if (a.porcentaje === null) {
+                    texto = 'Aún no has hecho ningún quiz de este tema. Haz uno fácil para saber desde dónde partes.';
+                } else if (a.porcentaje < 50) {
+                    texto = 'Tu dominio es del ' + a.porcentaje + '%, así que faltan las bases. Vuelve a leer tus apuntes y usa las flashcards antes del quiz.';
+                } else if (a.porcentaje < 70) {
+                    texto = 'Vas en ' + a.porcentaje + '%: casi lo tienes. Céntrate en los conceptos que fallaste, no en releer todo.';
+                } else if (a.porcentaje < 85) {
+                    texto = 'Dominio del ' + a.porcentaje + '%: base sólida. Sube a nivel medio o difícil para afianzarlo.';
+                } else {
+                    texto = 'Dominio del ' + a.porcentaje + '%: controlado. Puedes dejarlo descansar y volver tras unos días.';
+                }
+                if (d.pct !== null && d.pct < 60) {
+                    texto += ' Además, en nivel ' + nivelTexto(item.nivel).toLowerCase() + ' tienes ' + d.pct + '% de aciertos (' + d.aciertos + '/' + d.total + ').';
+                }
+                const flojos = conceptosDebiles(20).filter(function (c) { return c.temaId === t.id && c.pct < 70; }).slice(0, 5);
+                let chips = '';
+                flojos.forEach(function (c) {
+                    chips += '<span class="chip-ideas">' + esc(c.clave) + ' · ' + c.mal + ' ' + plural(c.mal, 'fallo', 'fallos') + '</span>';
+                });
+                html += '<div class="recomendacion"><h4>' + esc(t.nombre) + '</h4>' +
+                    '<p>' + esc(texto) + '</p>' +
+                    (chips ? '<div style="margin-bottom:12px"><b style="font-size:.82rem;color:var(--tenue)">REFUERZA:</b><br>' + chips + '</div>' : '') +
+                    '<div class="acciones">' +
+                    '<button class="btn pequeno" onclick="lanzarRepaso(\'' + t.id + '\',\'quiz\')">Quiz de repaso (' + nivelTexto(item.nivel).toLowerCase() + ')</button>' +
+                    '<button class="btn sec pequeno" onclick="lanzarRepaso(\'' + t.id + '\',\'flash\')">Practicar flashcards</button>' +
+                    '<button class="btn sec pequeno" onclick="lanzarRepaso(\'' + t.id + '\',\'banco\')">Ver preguntas</button>' +
+                    '</div></div>';
+            });
+            caja.innerHTML = html;
+        }
+
+        function renderConceptos() {
+            const caja = $('#panel-conceptos');
+            const flojos = conceptosDebiles(10).filter(function (c) { return c.pct < 75; });
+            if (!flojos.length) {
+                caja.innerHTML = vacio('✅', 'No tienes errores repetidos en ningún concepto. Sigue así.');
+                return;
+            }
+            let html = '';
+            flojos.forEach(function (c) {
+                html += '<div class="fila-nivel" style="padding:9px 0;border-bottom:1px solid var(--borde)">' +
+                    '<span class="nombre" style="min-width:120px">' + esc(c.clave) + '</span>' +
+                    '<span class="barra"><div style="width:' + c.pct + '%;background:' + nivelColor(c.pct) + '"></div></span>' +
+                    '<span class="val">' + c.ok + '/' + c.total + ' · ' + esc(c.tema) + '</span></div>';
+            });
+            caja.innerHTML = html;
+        }
+
+        function renderHistorial() {
+            const grafico = $('#panel-grafico');
+            const ultimos = E.intentos.slice(-10);
+            if (!ultimos.length) {
+                grafico.innerHTML = vacio('🗂️', 'Todavía no hay quizzes registrados.');
+                $('#panel-historial').innerHTML = '';
+                return;
+            }
+            let barras = '<div class="grafico">';
+            ultimos.forEach(function (i) {
+                const pct = Math.round((i.aciertos / Math.max(1, i.total)) * 100);
+                barras += '<div class="columna"><div class="barra-col" style="height:' + Math.max(4, pct) + '%;background:' + nivelColor(pct) + '"></div>' +
+                    '<span>' + fechaCorta(i.fecha) + '</span><span>' + pct + '%</span></div>';
+            });
+            barras += '</div>';
+            grafico.innerHTML = barras;
+
+            let filas = '<table class="tabla"><thead><tr><th>Fecha</th><th>Quiz</th><th>Nivel</th><th>Resultado</th><th>Puntos</th><th>Tiempo</th></tr></thead><tbody>';
+            E.intentos.slice().reverse().slice(0, 12).forEach(function (i) {
+                const pct = Math.round((i.aciertos / Math.max(1, i.total)) * 100);
+                const minutos = Math.floor(i.duracion / 60000);
+                const segundos = Math.round((i.duracion % 60000) / 1000);
+                filas += '<tr><td>' + fechaLarga(i.fecha) + '</td><td>' + esc(i.titulo) + '</td>' +
+                    '<td><span class="etiqueta ' + (i.nivel === 'mixto' ? 'tipo' : i.nivel) + '">' + (i.nivel === 'mixto' ? 'Mixta' : nivelTexto(i.nivel)) + '</span></td>' +
+                    '<td style="color:' + nivelColor(pct) + ';font-weight:600">' + i.aciertos + '/' + i.total + ' · ' + pct + '%</td>' +
+                    '<td>' + i.puntos + '</td><td>' + minutos + ':' + (segundos < 10 ? '0' : '') + segundos + '</td></tr>';
+            });
+            filas += '</tbody></table>';
+            $('#panel-historial').innerHTML = filas;
+        }
+
+        function lanzarRepaso(temaId, destino) {
+            if (destino === 'quiz') {
+                $('#quiz-tema').value = temaId;
+                $('#quiz-modo').value = 'inteligente';
+                $('#quiz-nivel').value = 'mixto';
+                irA('quiz');
+                setTimeout(function () { empezarQuiz(); }, 60);
+            } else if (destino === 'flash') {
+                $('#flash-tema').value = temaId;
+                irA('tarjetas');
+                setTimeout(function () { iniciarFlashcards(); }, 60);
+            } else {
+                $('#filtro-tema').value = temaId;
+                irA('preguntas');
+            }
+        }
+
+        function crearTema() {
+            const nombre = $('#tema-nombre').value.trim();
+            const notas = $('#tema-notas').value.trim();
+            if (nombre.length < 2) {
+                toast('Escribe el nombre del tema.', 'mal');
+                return;
+            }
+            if (notas.length < 25) {
+                toast('Pega tus apuntes (al menos unas líneas) para que el asistente tenga con qué trabajar.', 'mal');
+                return;
+            }
+            const niveles = $$('#tema-niveles input:checked').map(function (c) { return c.value; });
+            if (!niveles.length) {
+                toast('Elige al menos un nivel de dificultad.', 'mal');
+                return;
+            }
+            const total = parseInt($('#tema-cantidad').value, 10) || 10;
+            crearTemaConNotas(nombre, notas, niveles, total);
+            $('#tema-nombre').value = '';
+            $('#tema-notas').value = '';
+        }
+
+        function crearTemaConNotas(nombre, notas, niveles, total) {
+            const repetido = E.temas.some(function (t) { return t.nombre.toLowerCase() === nombre.toLowerCase(); });
+            if (repetido) {
+                toast('Ya existe un tema con ese nombre. Prueba con otro.', 'mal');
+                return;
+            }
+            const tema = { id: uid('tema'), nombre: nombre, notas: notas, creado: Date.now() };
+            E.temas.push(tema);
+
+            const analisis = analizarNotas(notas);
+            const pedidas = repartirNiveles(niveles, total);
+            const preguntas = generarPreguntas(tema, analisis, pedidas);
+            const tarjetas = generarTarjetas(tema, analisis);
+
+            E.preguntas = E.preguntas.concat(preguntas);
+            E.tarjetas = E.tarjetas.concat(tarjetas);
+            guardar();
+            refrescar();
+
+            if (!preguntas.length) {
+                toast('El tema se guardó, pero tus apuntes son demasiado cortos para crear preguntas. Añade más texto.', 'mal');
+                return;
+            }
+            toast('Listo: ' + preguntas.length + ' preguntas y ' + tarjetas.length + ' tarjetas creadas para «' + nombre + '».', 'bien');
+            irA('preguntas');
+        }
+
+        function repartirNiveles(niveles, total) {
+            const pedidas = { facil: 0, medio: 0, dificil: 0 };
+            if (niveles.length === 1) {
+                pedidas[niveles[0]] = total;
+            } else if (niveles.length === 2) {
+                niveles.forEach(function (n, i) { pedidas[n] = i === 0 ? Math.ceil(total / 2) : total - Math.ceil(total / 2); });
+            } else {
+                const base = Math.floor(total / 3);
+                pedidas.facil = base + (total - base * 3 > 0 ? 1 : 0);
+                pedidas.medio = base + (total - base * 3 > 1 ? 1 : 0);
+                pedidas.dificil = base;
+            }
+            return pedidas;
+        }
+
+        function regenerarTema(id) {
+            const t = temaPorId(id);
+            if (!t) return;
+            const analisis = analizarNotas(t.notas);
+            if (!analisis.definiciones.length && !analisis.terminos.length) {
+                toast('Ese tema no tiene apuntes suficientes. Edítalos primero.', 'mal');
+                return;
+            }
+            E.preguntas = E.preguntas.filter(function (p) { return !(p.temaId === id && p.auto); });
+            E.tarjetas = E.tarjetas.filter(function (c) { return !(c.temaId === id && c.auto); });
+            const pedidas = repartirNiveles(['facil', 'medio', 'dificil'], 12);
+            const preguntas = generarPreguntas(t, analisis, pedidas);
+            const tarjetas = generarTarjetas(t, analisis);
+            E.preguntas = E.preguntas.concat(preguntas);
+            E.tarjetas = E.tarjetas.concat(tarjetas);
+            guardar();
+            refrescar();
+            toast('Contenido de «' + t.nombre + '» regenerado: ' + preguntas.length + ' preguntas y ' + tarjetas.length + ' tarjetas.', 'bien');
+        }
+
+        function editarNotas(id) {
+            const t = temaPorId(id);
+            if (!t) return;
+            const nuevas = prompt('Escribe los apuntes de «' + t.nombre + '» (se muestran abajo y puedes corregirlos):', t.notas);
+            if (nuevas === null) return;
+            if (nuevas.trim().length < 25) {
+                toast('Necesito al menos unas líneas de apuntes.', 'mal');
+                return;
+            }
+            t.notas = nuevas.trim();
+            guardar();
+            regenerarTema(id);
+        }
+
+        function borrarTema(id) {
+            const t = temaPorId(id);
+            if (!t) return;
+            if (!confirm('¿Borrar «' + t.nombre + '» y todo su contenido? No se puede deshacer.')) return;
+            E.temas = E.temas.filter(function (x) { return x.id !== id; });
+            E.preguntas = E.preguntas.filter(function (p) { return p.temaId !== id; });
+            const antes = E.tarjetas.map(function (c) { return c.id; });
+            E.tarjetas = E.tarjetas.filter(function (c) { return c.temaId !== id; });
+            const despues = new Set(E.tarjetas.map(function (c) { return c.id; }));
+            antes.forEach(function (cid) { if (!despues.has(cid)) delete E.revision[cid]; });
+            E.intentos = E.intentos.filter(function (i) { return i.temaId !== id; });
+            guardar();
+            refrescar();
+            toast('Tema borrado.');
+        }
+
+        function exportarDatos() {
+            const blob = new Blob([JSON.stringify(E, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'mi-estudio-' + new Date().toISOString().slice(0, 10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+            toast('Copia descargada.');
+        }
+
+        function importarDatos() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json,application/json';
+            input.onchange = function () {
+                const archivo = input.files && input.files[0];
+                if (!archivo) return;
+                const lector = new FileReader();
+                lector.onload = function () {
+                    try {
+                        const datos = normalizar(JSON.parse(String(lector.result)));
+                        if (!datos.temas.length && !datos.preguntas.length) {
+                            toast('El archivo no parece una copia válida.', 'mal');
+                            return;
+                        }
+                        if (!confirm('Esto reemplazará tus datos actuales. ¿Continuar?')) return;
+                        E = datos;
+                        guardar();
+                        refrescar();
+                        toast('Copia importada correctamente.', 'bien');
+                    } catch (err) {
+                        toast('No se pudo leer el archivo: puede que esté dañado.', 'mal');
+                    }
+                };
+                lector.readAsText(archivo);
+            };
+            input.click();
+        }
+
+        function borrarTodo() {
+            if (!confirm('Se borrarán todos tus temas, preguntas, tarjetas e historial. ¿Seguro?')) return;
+            E = estadoVacio();
+            guardar();
+            refrescar();
+            toast('Todo borrado.');
+        }
+
+        function irA(vista) {
+            $$('.vista').forEach(function (v) { v.classList.remove('activa'); });
+            $$('#pestanas button').forEach(function (b) { b.classList.remove('activa'); });
+            const seccion = $('#vista-' + vista);
+            if (seccion) seccion.classList.add('activa');
+            const boton = $('#pestanas button[data-vista="' + vista + '"]');
+            if (boton) boton.classList.add('activa');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        const EJEMPLO = {
+            nombre: 'El Sistema Solar',
+            notas: [
+                'El sistema solar es el conjunto de planetas, satélites, asteroides y cometas que orbitan alrededor del Sol.',
+                'Los planetas del sistema solar son Mercurio, Venus, Tierra, Marte, Júpiter, Saturno, Urano y Neptuno.',
+                'El Sol es una estrella que produce luz y calor mediante la fusión nuclear del hidrógeno.',
+                'Mercurio es el planeta más cercano al Sol y el más pequeño del sistema solar.',
+                'Venus es el planeta más caliente del sistema solar porque tiene una atmósfera densa de dióxido de carbono.',
+                'La Tierra es el tercer planeta desde el Sol y el único donde se ha confirmado la existencia de vida.',
+                'Marte es conocido como el planeta rojo debido a su superficie rica en óxido de hierro.',
+                'Júpiter es el planeta más grande del sistema solar y está formado principalmente de hidrógeno y helio.',
+                'Saturno es el planeta famoso por el sistema de anillos y por su baja densidad.',
+                'Neptuno es el planeta más lejano del Sol y presenta los vientos más rápidos del sistema solar.',
+                'Urano es un gigante helado que gira sobre su propio eje, por eso parece rodar.',
+                'La Luna es el satélite natural de la Tierra y su periodo de rotación dura 27,3 días.',
+                'Las órbitas de los planetas son elípticas y se miden en unidades astronómicas.'
+            ].join('\n')
+        };
+
+        function crearTemaEjemplo(silencioso) {
+            if (E.temas.some(function (t) { return t.nombre === EJEMPLO.nombre; })) return false;
+            const tema = { id: uid('tema'), nombre: EJEMPLO.nombre, notas: EJEMPLO.notas, creado: Date.now() };
+            E.temas.push(tema);
+            const analisis = analizarNotas(EJEMPLO.notas);
+            const preguntas = generarPreguntas(tema, analisis, repartirNiveles(['facil', 'medio', 'dificil'], 12));
+            const tarjetas = generarTarjetas(tema, analisis);
+            E.preguntas = E.preguntas.concat(preguntas);
+            E.tarjetas = E.tarjetas.concat(tarjetas);
+            guardar();
+            if (!silencioso) {
+                refrescar();
+                toast('Tema de ejemplo añadido: ' + preguntas.length + ' preguntas y ' + tarjetas.length + ' tarjetas.', 'bien');
+            }
+            return true;
+        }
+
+        function cargarEjemplo() {
+            if (crearTemaEjemplo(false)) irA('temas');
+            else toast('Ya tienes el tema de ejemplo. Puedes regenerar su contenido cuando quieras.', 'mal');
+        }
+
+        function iniciar() {
+            cargar();
+            $$('#pestanas button').forEach(function (boton) {
+                boton.addEventListener('click', function () { irA(boton.dataset.vista); });
+            });
+            $$('#tema-niveles .nivel-chip input').forEach(function (input) {
+                input.addEventListener('change', function () {
+                    input.parentNode.classList.toggle('on', input.checked);
+                });
+            });
+            refrescar();
+        }
+
+        iniciar();
+    </script>
+</body>
+</html>
